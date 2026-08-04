@@ -57,25 +57,30 @@
         .card-preview:hover{background:#f8fafc}
         .card-body{display:none;margin-top:6px;padding:10px;background:#f8fafc;border-radius:8px;border-left:3px solid #3b82f6;line-height:1.6;color:#1a1a1a;font-size:14px;word-wrap:break-word;overflow-wrap:break-word}
         .card-body.show{display:block}
-        /* 🔥 ИСПРАВЛЕНИЕ ДЛЯ ТЕЛЕФОНОВ — убираем лишние точки и цифры */
-        .card-body ul, .card-body ol {
-            padding-left: 20px;
-            margin: 4px 0;
-            list-style-position: inside;
+        
+        /* 🔥 ЖЁСТКОЕ ИСПРАВЛЕНИЕ ДЛЯ СПИСКОВ НА ТЕЛЕФОНАХ */
+        .card-body ul, 
+        .card-body ol {
+            margin: 4px 0 !important;
+            padding-left: 24px !important;
+            list-style-position: outside !important;
         }
         .card-body li {
-            margin: 2px 0;
-            list-style-position: inside;
+            margin: 2px 0 !important;
+            padding-left: 4px !important;
+            list-style-position: outside !important;
         }
-        /* Убираем маркеры у вложенных списков на телефонах */
+        /* Для совсем маленьких экранов */
         @media (max-width: 480px) {
-            .card-body ul, .card-body ol {
-                padding-left: 16px;
+            .card-body ul, 
+            .card-body ol {
+                padding-left: 20px !important;
             }
-            .card-body li::marker {
-                font-size: 13px;
+            .card-body li {
+                padding-left: 2px !important;
             }
         }
+        
         .card-body a[target="_blank"]{display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe}
         .card-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;border-top:1px solid #f1f5f9;padding-top:8px;flex-wrap:wrap}
         .card-actions button{border:0;background:0;cursor:pointer;padding:6px 14px;border-radius:6px;font-size:14px;transition:background 0.15s;touch-action:manipulation;min-height:36px}
