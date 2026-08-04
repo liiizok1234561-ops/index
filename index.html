@@ -1066,13 +1066,86 @@
   }
 
   function insertBulletList() {
-    document.getElementById('editor').focus();
-    document.execCommand('insertUnorderedList', false, null);
+    insertListSafely('UL');
   }
 
   function insertNumberList() {
-    document.getElementById('editor').focus();
-    document.execCommand('insertOrderedList', false, null);
+    insertListSafely('OL');
+  }
+
+  function insertListSafely(targetTag) {
+    const editor = document.getElementById('editor');
+    editor.focus();
+
+    const selection = window.getSelection();
+
+    if (!selection || selection.rangeCount === 0) {
+      document.execCommand(
+        targetTag === 'UL' ? 'insertUnorderedList' : 'insertOrderedList',
+        false,
+        null
+      );
+      return;
+    }
+
+    let node = selection.anchorNode;
+
+    if (node && node.nodeType === Node.TEXT_NODE) {
+      node = node.parentElement;
+    }
+
+    const currentItem = node && node.closest
+      ? node.closest('li')
+      : null;
+
+    const currentList = currentItem
+      ? currentItem.parentElement
+      : null;
+
+    const insideEditor = currentList && editor.contains(currentList);
+
+    // Если курсор уже находится в списке другого типа,
+    // отделяем текущий пункт и последующие пункты в новый список.
+    if (
+      insideEditor &&
+      currentList.tagName !== targetTag &&
+      (currentList.tagName === 'UL' || currentList.tagName === 'OL')
+    ) {
+      const newList = document.createElement(targetTag);
+      currentList.parentNode.insertBefore(newList, currentList.nextSibling);
+
+      let item = currentItem;
+
+      while (item) {
+        const nextItem = item.nextElementSibling;
+        newList.appendChild(item);
+        item = nextItem;
+      }
+
+      if (!currentList.children.length) {
+        currentList.remove();
+      }
+
+      placeCaretAtEnd(currentItem);
+      return;
+    }
+
+    document.execCommand(
+      targetTag === 'UL' ? 'insertUnorderedList' : 'insertOrderedList',
+      false,
+      null
+    );
+  }
+
+  function placeCaretAtEnd(element) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+
+    range.selectNodeContents(element);
+    range.collapse(false);
+
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 
   function insertLink() {
