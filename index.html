@@ -140,7 +140,7 @@
 <script>
 var PK='jp',DK='jd',pw=null,editingId=null;
 
-// ===== ШИФРОВАНИЕ (ИСПРАВЛЕНО!) =====
+// ===== ШИФРОВАНИЕ =====
 function utf8ToBase64(str) {
     var bytes = new TextEncoder().encode(str);
     var binary = '';
@@ -185,22 +185,6 @@ function dec(d, p) {
     }
 }
 
-// ===== ПРОВЕРКА ПАРОЛЯ =====
-function checkPassword(p) {
-    var stored = localStorage.getItem(DK);
-    if (!stored) return false;
-    var result = dec(stored, p);
-    // Если result === null — пароль неверный
-    if (result === null) return false;
-    // Пытаемся распарсить JSON — если получилось, пароль верный
-    try {
-        JSON.parse(result);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
 // ===== ОСТАЛЬНЫЕ ФУНКЦИИ =====
 function today(){var t=new Date();var m=String(t.getMonth()+1);var d=String(t.getDate());if(m.length<2)m='0'+m;if(d.length<2)d='0'+d;return t.getFullYear()+'-'+m+'-'+d;}
 function fmtDate(d){if(!d)return '';var p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
@@ -230,10 +214,80 @@ function exportData(){var entries=loadData();if(!entries.length){alert('Нет �
 function logout(){if(confirm('Выйти?')){pw=null;location.reload();}}
 var formatBtns=document.querySelectorAll('[data-cmd]');for(var i=0;i<formatBtns.length;i++){(function(btn){btn.addEventListener('click',function(){var cmd=this.dataset.cmd;document.getElementById('editor').focus();document.execCommand(cmd,false,null);setTimeout(function(){try{if(document.queryCommandState(cmd)){btn.classList.add('active');}else{btn.classList.remove('active');}}catch(e){}},10);});})(formatBtns[i]);}
 document.getElementById('date').value=today();var sp=localStorage.getItem(PK);if(sp){document.getElementById('authTitle').textContent='Введите пароль';document.getElementById('authDesc').textContent='Данные зашифрованы';document.getElementById('login').textContent='Войти';document.getElementById('hint').textContent='Введите ваш пароль';document.getElementById('reset').style.display='block';}else{document.getElementById('authTitle').textContent='Создайте пароль';document.getElementById('authDesc').textContent='Придумайте пароль для шифрования';document.getElementById('login').textContent='Создать';document.getElementById('hint').textContent='Минимум 4 символа';document.getElementById('reset').style.display='none';}
-document.getElementById('login').onclick=function(){var p=document.getElementById('pass').value.trim();document.getElementById('err').textContent='';if(p.length<4){document.getElementById('err').textContent='Минимум 4 символа';return;}var sp=localStorage.getItem(PK);if(!sp){localStorage.setItem(PK,p);localStorage.setItem(DK,enc('[]',p));pw=p;document.getElementById('pass').value='';enterApp();}else{var stored=localStorage.getItem(DK);if(!stored){document.getElementById('err').textContent='Ошибка данных';return;}var result=dec(stored,p);if(result===null){document.getElementById('err').textContent='❌ Неверный пароль';document.getElementById('pass').value='';document.getElementById('pass').focus();return;}try{JSON.parse(result);pw=p;document.getElementById('pass').value='';enterApp();}catch(e){document.getElementById('err').textContent='❌ Неверный пароль';document.getElementById('pass').value='';document.getElementById('pass').focus();}}};
-document.getElementById('pass').onkeydown=function(e){if(e.key==='Enter'){document.getElementById('login').click();}};
-document.getElementById('reset').onclick=function(){if(confirm('Все данные будут удалены!')&&confirm('Точно?')){localStorage.removeItem(PK);localStorage.removeItem(DK);location.reload();}};
-function enterApp(){document.getElementById('auth').classList.add('hidden');document.getElementById('app').classList.remove('hidden');render();}
+
+// 🔥 ИСПРАВЛЕННАЯ АВТОРИЗАЦИЯ
+document.getElementById('login').onclick = function() {
+    var p = document.getElementById('pass').value.trim();
+    var err = document.getElementById('err');
+    err.textContent = '';
+    
+    if (p.length < 4) {
+        err.textContent = '⚠️ Минимум 4 символа';
+        return;
+    }
+    
+    var hasPassword = localStorage.getItem(PK);
+    
+    if (!hasPassword) {
+        // Первый запуск — создаём пароль
+        localStorage.setItem(PK, p);
+        localStorage.setItem(DK, enc('[]', p));
+        pw = p;
+        document.getElementById('pass').value = '';
+        enterApp();
+        return;
+    }
+    
+    // Проверяем пароль
+    var stored = localStorage.getItem(DK);
+    if (!stored) {
+        err.textContent = '❌ Ошибка данных';
+        return;
+    }
+    
+    var decrypted = dec(stored, p);
+    
+    // Если decrypted === null — пароль не подходит
+    if (decrypted === null) {
+        err.textContent = '❌ Неверный пароль';
+        document.getElementById('pass').value = '';
+        document.getElementById('pass').focus();
+        return;
+    }
+    
+    // Проверяем, что это валидный JSON
+    try {
+        JSON.parse(decrypted);
+        // Пароль верный!
+        pw = p;
+        document.getElementById('pass').value = '';
+        enterApp();
+    } catch (e) {
+        err.textContent = '❌ Неверный пароль';
+        document.getElementById('pass').value = '';
+        document.getElementById('pass').focus();
+    }
+};
+
+document.getElementById('pass').onkeydown = function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('login').click();
+    }
+};
+
+document.getElementById('reset').onclick = function() {
+    if (confirm('Все данные будут удалены!') && confirm('Точно?')) {
+        localStorage.removeItem(PK);
+        localStorage.removeItem(DK);
+        location.reload();
+    }
+};
+
+function enterApp() {
+    document.getElementById('auth').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    render();
+}
 </script>
 </body>
 </html>
