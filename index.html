@@ -3,22 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src https://script.google.com https://script.googleusercontent.com; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https:; frame-ancestors 'none'; base-uri 'none'; form-action 'none';">
   <title>Журнал передачи смен</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
   <style>
     *{box-sizing:border-box}
     body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#eef2f7;color:#172033}
     button,input,select{font:inherit}
     button{cursor:pointer}
     .hidden{display:none!important}
-    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.92);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999}
-    .modal{width:min(390px,100%);background:#fff;border-radius:24px;padding:26px;box-shadow:0 24px 80px rgba(0,0,0,.3);text-align:center}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999}
+    .modal{width:min(410px,100%);background:#fff;border-radius:24px;padding:26px;box-shadow:0 24px 80px rgba(0,0,0,.3);text-align:center}
     .modal-icon{font-size:48px}
     .modal h2{margin:8px 0 4px;font-size:22px}
-    .modal p{margin:0 0 16px;color:#64748b;font-size:14px}
+    .modal p{margin:0 0 16px;color:#64748b;font-size:14px;line-height:1.5}
     .modal input{width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:14px;text-align:center;font-size:17px}
     .modal input:focus{outline:0;border-color:#2563eb}
     .error{min-height:20px;margin-top:8px;color:#dc2626;font-size:13px}
+    .security-note{margin-top:12px;padding:10px;border-radius:10px;background:#f8fafc;color:#64748b;font-size:12px;text-align:left}
     .spinner{width:26px;height:26px;border:3px solid #dbe3ef;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite;margin:16px auto}
     @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -50,6 +53,7 @@
     .btn-danger{background:#fee2e2;color:#991b1b}
     .btn-warning{background:#fef3c7;color:#92400e}
     .btn-success{background:#dcfce7;color:#166534}
+    .btn-purple{background:#ede9fe;color:#5b21b6}
     .btn:disabled{opacity:.55;cursor:not-allowed}
     .list-top{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:22px}
     .list-title h2{font-size:17px;margin:0}
@@ -71,6 +75,7 @@
     .card{border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:9px;position:relative}
     .card:last-child{margin-bottom:0}
     .card.pinned{border-color:#f6c453;background:#fffdf5}
+    .card.legacy{border-color:#fb923c;background:#fff7ed}
     .card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
     .person{font-weight:800}
     .nick{display:inline-block;margin-left:5px;padding:3px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:12px}
@@ -81,6 +86,8 @@
     .done{background:#dcfce7;color:#166534}
     .not_done{background:#e2e8f0;color:#334155}
     .pinned-badge{background:#fff3bf;color:#7a4b00}
+    .encrypted-badge{background:#dbeafe;color:#1e40af}
+    .legacy-badge{background:#ffedd5;color:#9a3412}
     .preview{margin-top:8px;color:#334155;cursor:pointer;padding:6px;border-radius:7px}
     .preview:hover{background:#f8fafc}
     .body{display:none;margin-top:7px;padding:11px;background:#f8fafc;border-radius:9px;border-left:3px solid #2563eb;line-height:1.6;overflow-wrap:anywhere}
@@ -92,7 +99,9 @@
     .card-actions .edit:hover{background:#dbeafe}
     .card-actions .delete{color:#dc2626}
     .card-actions .delete:hover{background:#fee2e2}
-    .offline{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:10px;padding:9px 11px;font-size:13px;margin-bottom:10px}
+    .notice{border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+    .offline{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
+    .legacy-notice{background:#fff7ed;color:#9a3412;border:1px solid #fdba74;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
     @media(max-width:760px){
       .grid{grid-template-columns:1fr 1fr}
       .list-top{grid-template-columns:1fr}
@@ -113,9 +122,9 @@
 
 <div id="loading" class="overlay">
   <div class="modal">
-    <div class="modal-icon">📋</div>
-    <h2>Журнал передачи смен</h2>
-    <p>Подключаемся к общей таблице</p>
+    <div class="modal-icon">🔐</div>
+    <h2>Защищённый журнал</h2>
+    <p>Подготавливаем безопасное соединение</p>
     <div class="spinner"></div>
   </div>
 </div>
@@ -123,43 +132,70 @@
 <div id="access" class="overlay hidden">
   <div class="modal">
     <div class="modal-icon">🔐</div>
-    <h2>Код доступа</h2>
-    <p>Введите общий код, указанный в Apps Script</p>
-    <input id="accessKey" type="password" placeholder="Код доступа">
-    <div id="accessError" class="error"></div>
-    <button id="accessButton" class="btn btn-primary" style="width:100%">Войти</button>
+    <h2>Введите пароль</h2>
+    <p>Пароль нужен для доступа и расшифровки записей. Браузер может предложить сохранить его в менеджере паролей.</p>
+    <form id="accessForm">
+      <input
+        id="accessUser"
+        name="username"
+        type="text"
+        value="shift-journal"
+        autocomplete="username"
+        tabindex="-1"
+        aria-hidden="true"
+        style="position:absolute;left:-10000px;width:1px;height:1px;opacity:0;"
+      >
+      <input
+        id="accessKey"
+        name="password"
+        type="password"
+        placeholder="Пароль"
+        autocomplete="current-password"
+      >
+      <div id="accessError" class="error"></div>
+      <button id="accessButton" type="submit" class="btn btn-primary" style="width:100%">Открыть журнал</button>
+    </form>
+    <div class="security-note">
+      ФИО, кличка и описание шифруются в браузере алгоритмом AES-GCM до отправки в Google Таблицу.
+    </div>
   </div>
 </div>
 
 <main id="app" class="page hidden">
   <header class="header">
     <div class="brand">
-      <div class="brand-icon">📋</div>
+      <div class="brand-icon">🔐</div>
       <div>
         <h1>Журнал передачи смен</h1>
-        <small>Общие данные для всех сотрудников</small>
+        <small>Зашифрованные данные · пароль можно сохранить в браузере</small>
       </div>
     </div>
     <div class="header-actions">
       <button class="btn btn-warning" onclick="loadEntries(true)">🔄 Обновить</button>
       <button class="btn btn-success" onclick="exportData()">📤 Экспорт</button>
+      <button class="btn btn-purple" onclick="lockApp()">🔒 Заблокировать</button>
       <button class="btn btn-danger" onclick="clearAll()">🗑 Очистить</button>
     </div>
   </header>
 
   <section class="content">
-    <div id="offlineNotice" class="offline hidden">
-      Нет связи с таблицей. Показана последняя сохранённая копия.
+    <div id="offlineNotice" class="notice offline hidden">
+      Нет связи с таблицей. Показана локальная зашифрованная копия.
+    </div>
+
+    <div id="legacyNotice" class="notice legacy-notice hidden">
+      <span>⚠️ В таблице есть старые незашифрованные записи.</span>
+      <button class="btn btn-warning" onclick="migrateLegacyEntries()">🔐 Зашифровать старые записи</button>
     </div>
 
     <div class="grid">
       <div class="field">
         <label>👤 ФИО</label>
-        <input id="fullName" placeholder="Иванов Иван">
+        <input id="fullName" placeholder="Иванов Иван" autocomplete="off">
       </div>
       <div class="field">
         <label>🐾 Кличка</label>
-        <input id="nickname" placeholder="Fox">
+        <input id="nickname" placeholder="Fox" autocomplete="off">
       </div>
       <div class="field">
         <label>📅 Дата</label>
@@ -228,14 +264,19 @@
 <script>
   const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOWqG8iNLcQF6q51K5Mp8D4MFK_c3ltCAKxNGxY16erf50TuJhwQouWp9IRZDR12SV/exec';
 
-  const CACHE_KEY = 'shiftJournalCacheV2';
-  const ACCESS_KEY_STORAGE = 'shiftJournalAccessKey';
+  const CACHE_KEY = 'shiftJournalEncryptedCacheV3';
+  const PBKDF2_ITERATIONS = 250000;
+  const KEY_SALT_TEXT = 'shift-journal-v3-2026-fixed-salt';
 
+  let rawEntries = [];
   let entries = [];
   let editingId = null;
   let currentFilter = 'all';
   let autoSyncTimer = null;
-  let accessKey = localStorage.getItem(ACCESS_KEY_STORAGE) || '';
+
+  // Пароль и криптографический ключ существуют только в памяти вкладки.
+  let accessKey = '';
+  let cryptoKey = null;
 
   const statusLabels = {
     urgent: '🔴 Срочно',
@@ -246,14 +287,16 @@
 
   function today() {
     const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0')
+    ].join('-');
   }
 
   function formatDate(date) {
     if (!date) return 'Без даты';
+
     const parts = date.split('-');
     if (parts.length !== 3) return date;
 
@@ -273,7 +316,7 @@
 
   function htmlToText(html) {
     const div = document.createElement('div');
-    div.innerHTML = html || '';
+    div.innerHTML = sanitizeRichHtml(html || '');
     return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
   }
 
@@ -287,45 +330,165 @@
     return String(id).replace(/[^a-zA-Z0-9_-]/g, '_');
   }
 
-  function getPayload(action, extra) {
-    return Object.assign({
-      action,
-      key: accessKey
-    }, extra || {});
+  function bytesToBase64(bytes) {
+    let binary = '';
+
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+
+    return btoa(binary);
   }
 
-  async function apiGet() {
-    const url = new URL(APPSCRIPT_URL);
-    url.searchParams.set('action', 'list');
+  function base64ToBytes(value) {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
 
-    if (accessKey) {
-      url.searchParams.set('key', accessKey);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
     }
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      cache: 'no-store',
-      redirect: 'follow'
+    return bytes;
+  }
+
+  async function deriveCryptoKey(password) {
+    const encoder = new TextEncoder();
+
+    const material = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(password),
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    );
+
+    return crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: encoder.encode(KEY_SALT_TEXT),
+        iterations: PBKDF2_ITERATIONS,
+        hash: 'SHA-256'
+      },
+      material,
+      {
+        name: 'AES-GCM',
+        length: 256
+      },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  async function encryptSensitiveData(data) {
+    if (!cryptoKey) {
+      throw new Error('Приложение заблокировано');
+    }
+
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plaintext = new TextEncoder().encode(JSON.stringify(data));
+
+    const ciphertext = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      cryptoKey,
+      plaintext
+    );
+
+    return 'enc:v1:' + JSON.stringify({
+      iv: bytesToBase64(iv),
+      data: bytesToBase64(new Uint8Array(ciphertext))
     });
+  }
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+  async function decryptSensitiveData(envelope) {
+    if (!cryptoKey) {
+      throw new Error('Приложение заблокировано');
     }
 
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.error || 'Ошибка Apps Script');
+    if (!String(envelope || '').startsWith('enc:v1:')) {
+      throw new Error('Это не зашифрованная запись');
     }
 
-    return data;
+    const payload = JSON.parse(String(envelope).slice(7));
+    const iv = base64ToBytes(payload.iv);
+    const ciphertext = base64ToBytes(payload.data);
+
+    const plaintext = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      cryptoKey,
+      ciphertext
+    );
+
+    return JSON.parse(new TextDecoder().decode(plaintext));
+  }
+
+  function sanitizeRichHtml(html) {
+    const template = document.createElement('template');
+    template.innerHTML = String(html || '');
+
+    const allowed = new Set([
+      'B','STRONG','I','EM','U','UL','OL','LI','BR','DIV','P','A','SPAN'
+    ]);
+
+    function cleanNode(node) {
+      Array.from(node.childNodes).forEach(child => {
+        if (child.nodeType === Node.COMMENT_NODE) {
+          child.remove();
+          return;
+        }
+
+        if (child.nodeType !== Node.ELEMENT_NODE) {
+          return;
+        }
+
+        if (!allowed.has(child.tagName)) {
+          const fragment = document.createDocumentFragment();
+
+          while (child.firstChild) {
+            fragment.appendChild(child.firstChild);
+          }
+
+          child.replaceWith(fragment);
+          cleanNode(node);
+          return;
+        }
+
+        Array.from(child.attributes).forEach(attribute => {
+          child.removeAttribute(attribute.name);
+        });
+
+        if (child.tagName === 'A') {
+          const original = child.getAttribute('href') || '';
+          const href = original.trim();
+
+          if (/^https?:\/\//i.test(href)) {
+            child.setAttribute('href', href);
+            child.setAttribute('target', '_blank');
+            child.setAttribute('rel', 'noopener noreferrer');
+          } else {
+            child.removeAttribute('href');
+          }
+        }
+
+        cleanNode(child);
+      });
+    }
+
+    cleanNode(template.content);
+    return template.innerHTML;
   }
 
   async function apiPost(action, extra) {
+    if (!accessKey) {
+      throw new Error('Введите пароль');
+    }
+
     const response = await fetch(APPSCRIPT_URL, {
       method: 'POST',
       redirect: 'follow',
-      body: JSON.stringify(getPayload(action, extra))
+      body: JSON.stringify(Object.assign({
+        action,
+        key: accessKey
+      }, extra || {}))
     });
 
     if (!response.ok) {
@@ -339,6 +502,64 @@
     }
 
     return data;
+  }
+
+  async function decodeEntries(serverEntries) {
+    const decoded = [];
+
+    for (const raw of serverEntries) {
+      const isEncrypted = String(raw.html || '').startsWith('enc:v1:');
+
+      if (isEncrypted) {
+        try {
+          const sensitive = await decryptSensitiveData(raw.html);
+
+          decoded.push({
+            id: raw.id,
+            fullName: String(sensitive.fullName || ''),
+            nickname: String(sensitive.nickname || ''),
+            html: sanitizeRichHtml(sensitive.html || ''),
+            date: raw.date,
+            status: raw.status,
+            pinned: Boolean(raw.pinned),
+            createdAt: raw.createdAt,
+            updatedAt: raw.updatedAt,
+            encrypted: true,
+            decryptError: false
+          });
+        } catch (_) {
+          decoded.push({
+            id: raw.id,
+            fullName: 'Не удалось расшифровать',
+            nickname: '',
+            html: '<p>Возможно, введён другой пароль.</p>',
+            date: raw.date,
+            status: raw.status,
+            pinned: Boolean(raw.pinned),
+            createdAt: raw.createdAt,
+            updatedAt: raw.updatedAt,
+            encrypted: true,
+            decryptError: true
+          });
+        }
+      } else {
+        decoded.push({
+          id: raw.id,
+          fullName: raw.fullName || '',
+          nickname: raw.nickname || '',
+          html: sanitizeRichHtml(raw.html || ''),
+          date: raw.date,
+          status: raw.status,
+          pinned: Boolean(raw.pinned),
+          createdAt: raw.createdAt,
+          updatedAt: raw.updatedAt,
+          encrypted: false,
+          decryptError: false
+        });
+      }
+    }
+
+    return decoded;
   }
 
   async function loadEntries(showStatus) {
@@ -347,40 +568,43 @@
     }
 
     try {
-      const data = await apiGet();
-      entries = Array.isArray(data.entries) ? data.entries : [];
-      saveCache();
+      const data = await apiPost('list');
+      rawEntries = Array.isArray(data.entries) ? data.entries : [];
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+
+      entries = await decodeEntries(rawEntries);
+
       document.getElementById('offlineNotice').classList.add('hidden');
+      updateLegacyNotice();
       setSyncStatus(`✅ Загружено записей: ${entries.length}`);
       render();
       return true;
     } catch (error) {
       console.error(error);
 
-      if (/код доступа/i.test(error.message)) {
-        showAccess();
-        return false;
+      if (/неверный пароль/i.test(error.message) || /не задан пароль/i.test(error.message)) {
+        throw error;
       }
 
-      loadCache();
+      try {
+        rawEntries = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+        entries = await decodeEntries(rawEntries);
+      } catch (_) {
+        rawEntries = [];
+        entries = [];
+      }
+
       document.getElementById('offlineNotice').classList.remove('hidden');
+      updateLegacyNotice();
       setSyncStatus(`❌ ${error.message}`);
       render();
       return false;
     }
   }
 
-  function saveCache() {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
-  }
-
-  function loadCache() {
-    try {
-      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
-      entries = Array.isArray(cached) ? cached : [];
-    } catch (_) {
-      entries = [];
-    }
+  function updateLegacyNotice() {
+    const hasLegacy = entries.some(entry => !entry.encrypted);
+    document.getElementById('legacyNotice').classList.toggle('hidden', !hasLegacy);
   }
 
   function setSyncStatus(text) {
@@ -388,7 +612,7 @@
   }
 
   function setBusy(busy) {
-    document.querySelectorAll('.actions button').forEach(button => {
+    document.querySelectorAll('.actions button, .header-actions button').forEach(button => {
       button.disabled = busy;
     });
   }
@@ -399,7 +623,7 @@
     const date = document.getElementById('entryDate').value;
     const status = document.getElementById('status').value;
     const pinned = document.getElementById('pinned').checked;
-    const html = document.getElementById('editor').innerHTML.trim();
+    const html = sanitizeRichHtml(document.getElementById('editor').innerHTML.trim());
 
     if (!fullName) throw new Error('Введите ФИО');
     if (!date) throw new Error('Укажите дату');
@@ -408,18 +632,41 @@
     return { fullName, nickname, date, status, pinned, html };
   }
 
+  async function prepareEncryptedEntry(form, id) {
+    const encrypted = await encryptSensitiveData({
+      fullName: form.fullName,
+      nickname: form.nickname,
+      html: form.html
+    });
+
+    return {
+      id: id || '',
+      fullName: '🔒',
+      nickname: '🔒',
+      date: form.date,
+      html: encrypted,
+      status: form.status,
+      pinned: form.pinned
+    };
+  }
+
   async function createEntry() {
     try {
-      const entry = readForm();
+      const form = readForm();
+      const entry = await prepareEncryptedEntry(form);
+
       setBusy(true);
-      setSyncStatus('⏳ Сохраняем запись...');
+      setSyncStatus('⏳ Шифруем и сохраняем запись...');
 
       const result = await apiPost('create', { entry });
-      entries.unshift(result.entry);
-      saveCache();
+      rawEntries.unshift(result.entry);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+
+      entries = await decodeEntries(rawEntries);
       clearForm();
+      updateLegacyNotice();
       render();
-      setSyncStatus('✅ Запись сохранена');
+      setSyncStatus('✅ Запись зашифрована и сохранена');
     } catch (error) {
       alert('❌ ' + error.message);
       setSyncStatus('❌ ' + error.message);
@@ -430,7 +677,11 @@
 
   function beginEdit(id) {
     const entry = entries.find(item => item.id === id);
-    if (!entry) return;
+
+    if (!entry || entry.decryptError) {
+      alert('Эту запись нельзя редактировать: она не расшифрована.');
+      return;
+    }
 
     editingId = id;
 
@@ -439,35 +690,43 @@
     document.getElementById('entryDate').value = entry.date || today();
     document.getElementById('status').value = entry.status || 'in_work';
     document.getElementById('pinned').checked = Boolean(entry.pinned);
-    document.getElementById('editor').innerHTML = entry.html || '';
+    document.getElementById('editor').innerHTML = sanitizeRichHtml(entry.html || '');
     document.getElementById('editor').classList.add('editing');
 
     document.getElementById('createButton').classList.add('hidden');
     document.getElementById('updateButton').classList.remove('hidden');
     document.getElementById('cancelButton').classList.remove('hidden');
 
-    document.getElementById('editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('editor').scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
   }
 
   async function updateEntry() {
     try {
       if (!editingId) return;
 
-      const entry = Object.assign({ id: editingId }, readForm());
+      const form = readForm();
+      const entry = await prepareEncryptedEntry(form, editingId);
+
       setBusy(true);
-      setSyncStatus('⏳ Обновляем запись...');
+      setSyncStatus('⏳ Шифруем и обновляем запись...');
 
       const result = await apiPost('update', { entry });
-      const index = entries.findIndex(item => item.id === editingId);
+      const index = rawEntries.findIndex(item => item.id === editingId);
 
       if (index !== -1) {
-        entries[index] = result.entry;
+        rawEntries[index] = result.entry;
       }
 
-      saveCache();
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+      entries = await decodeEntries(rawEntries);
+
       cancelEdit();
+      updateLegacyNotice();
       render();
-      setSyncStatus('✅ Запись обновлена');
+      setSyncStatus('✅ Запись зашифрована и обновлена');
     } catch (error) {
       alert('❌ ' + error.message);
       setSyncStatus('❌ ' + error.message);
@@ -491,8 +750,12 @@
     try {
       setSyncStatus('⏳ Удаляем запись...');
       await apiPost('delete', { id });
+
+      rawEntries = rawEntries.filter(item => item.id !== id);
       entries = entries.filter(item => item.id !== id);
-      saveCache();
+
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+      updateLegacyNotice();
       render();
       setSyncStatus('✅ Запись удалена');
     } catch (error) {
@@ -508,13 +771,70 @@
     try {
       setSyncStatus('⏳ Очищаем таблицу...');
       await apiPost('clear');
+
+      rawEntries = [];
       entries = [];
-      saveCache();
+      localStorage.removeItem(CACHE_KEY);
+
+      updateLegacyNotice();
       render();
       setSyncStatus('✅ Все записи удалены');
     } catch (error) {
       alert('❌ ' + error.message);
       setSyncStatus('❌ ' + error.message);
+    }
+  }
+
+  async function migrateLegacyEntries() {
+    const legacy = entries.filter(entry => !entry.encrypted);
+
+    if (!legacy.length) {
+      alert('Незашифрованных записей нет.');
+      return;
+    }
+
+    if (!confirm(`Будет зашифровано записей: ${legacy.length}. Продолжить?`)) {
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      let completed = 0;
+
+      for (const item of legacy) {
+        setSyncStatus(`⏳ Шифруем старые записи: ${completed + 1}/${legacy.length}`);
+
+        const encryptedEntry = await prepareEncryptedEntry({
+          fullName: item.fullName,
+          nickname: item.nickname,
+          html: sanitizeRichHtml(item.html),
+          date: item.date,
+          status: item.status,
+          pinned: item.pinned
+        }, item.id);
+
+        const result = await apiPost('update', { entry: encryptedEntry });
+        const rawIndex = rawEntries.findIndex(row => row.id === item.id);
+
+        if (rawIndex !== -1) {
+          rawEntries[rawIndex] = result.entry;
+        }
+
+        completed++;
+      }
+
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+      entries = await decodeEntries(rawEntries);
+
+      updateLegacyNotice();
+      render();
+      setSyncStatus(`✅ Зашифровано старых записей: ${completed}`);
+    } catch (error) {
+      alert('❌ Миграция остановлена: ' + error.message);
+      setSyncStatus('❌ ' + error.message);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -542,6 +862,7 @@
       })
       .filter(entry => {
         if (!query) return true;
+
         const haystack = [
           entry.fullName,
           entry.nickname,
@@ -606,18 +927,25 @@
     const id = escapeHtml(entry.id);
     const domId = safeId(entry.id);
     const pinClass = entry.pinned ? ' pinned' : '';
+    const legacyClass = entry.encrypted ? '' : ' legacy';
+
     const pinBadge = entry.pinned
       ? '<span class="badge pinned-badge">📌 Закреплено</span>'
       : '';
 
+    const securityBadge = entry.encrypted
+      ? '<span class="badge encrypted-badge">🔐 Зашифровано</span>'
+      : '<span class="badge legacy-badge">⚠️ Не зашифровано</span>';
+
     return `
-      <article class="card${pinClass}">
+      <article class="card${pinClass}${legacyClass}">
         <div class="card-top">
           <div>
             <span class="person">${escapeHtml(entry.fullName)}</span>
             ${entry.nickname ? `<span class="nick">${escapeHtml(entry.nickname)}</span>` : ''}
           </div>
           <div class="badges">
+            ${securityBadge}
             ${pinBadge}
             <span class="badge ${escapeHtml(entry.status)}">
               ${escapeHtml(statusLabels[entry.status] || statusLabels.in_work)}
@@ -625,11 +953,12 @@
           </div>
         </div>
 
-        <div class="preview" onclick="toggleCard('${domId}', this)">
+        <div class="preview" onclick="toggleCard('${domId}', this)"
+             data-original="${escapeHtml(previewText(entry.html))}">
           ${escapeHtml(previewText(entry.html))}
         </div>
 
-        <div id="body-${domId}" class="body">${entry.html || ''}</div>
+        <div id="body-${domId}" class="body">${sanitizeRichHtml(entry.html || '')}</div>
 
         <div class="card-actions">
           <button class="edit" onclick="beginEdit('${id}')">✏️ Редактировать</button>
@@ -651,6 +980,7 @@
   function toggleDateGroup(head) {
     const items = head.nextElementSibling;
     const arrow = head.querySelector('.arrow');
+
     items.classList.toggle('closed');
     arrow.classList.toggle('closed');
   }
@@ -660,17 +990,10 @@
     if (!body) return;
 
     body.classList.toggle('show');
+
     preview.textContent = body.classList.contains('show')
       ? '▲ Скрыть описание'
-      : preview.dataset.original || preview.textContent;
-
-    if (!preview.dataset.original) {
-      preview.dataset.original = previewText(body.innerHTML);
-    }
-
-    if (!body.classList.contains('show')) {
-      preview.textContent = preview.dataset.original;
-    }
+      : preview.dataset.original;
   }
 
   function exportData() {
@@ -686,14 +1009,25 @@
 
     data.forEach(entry => {
       text += `${formatDate(entry.date)} | ${entry.fullName}`;
-      if (entry.nickname) text += ` (${entry.nickname})`;
+
+      if (entry.nickname) {
+        text += ` (${entry.nickname})`;
+      }
+
       text += ` | ${statusLabels[entry.status] || ''}`;
-      if (entry.pinned) text += ' | Закреплено';
+
+      if (entry.pinned) {
+        text += ' | Закреплено';
+      }
+
       text += '\n';
       text += htmlToText(entry.html) + '\n\n';
     });
 
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([text], {
+      type: 'text/plain;charset=utf-8'
+    });
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `journal_${today()}.txt`;
@@ -722,7 +1056,9 @@
       return;
     }
 
-    document.getElementById('editor').focus();
+    const editor = document.getElementById('editor');
+    editor.focus();
+
     document.execCommand(
       'insertHTML',
       false,
@@ -735,38 +1071,74 @@
     document.execCommand('removeFormat', false, null);
   }
 
-  function showAccess() {
-    document.getElementById('loading').classList.add('hidden');
+
+  function lockApp() {
+    accessKey = '';
+    cryptoKey = null;
+    rawEntries = [];
+    entries = [];
+    editingId = null;
+
+    clearInterval(autoSyncTimer);
+
     document.getElementById('app').classList.add('hidden');
     document.getElementById('access').classList.remove('hidden');
+    document.getElementById('accessKey').value = '';
+    document.getElementById('accessError').textContent = '';
+    document.getElementById('list').innerHTML = '';
     document.getElementById('accessKey').focus();
   }
 
   async function submitAccess() {
     const input = document.getElementById('accessKey');
     const error = document.getElementById('accessError');
-    accessKey = input.value.trim();
+    const button = document.getElementById('accessButton');
+    const password = input.value;
+
     error.textContent = '';
 
+    if (password.length < 12) {
+      error.textContent = '⚠️ Пароль должен содержать не менее 12 символов';
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Проверяем и расшифровываем...';
+
     try {
-      const data = await apiGet();
-      localStorage.setItem(ACCESS_KEY_STORAGE, accessKey);
-      entries = Array.isArray(data.entries) ? data.entries : [];
-      saveCache();
+      accessKey = password;
+      cryptoKey = await deriveCryptoKey(password);
+
+      await loadEntries(false);
+
+      const failed = entries.some(entry => entry.decryptError);
+
+      if (failed) {
+        throw new Error('Пароль подходит к серверу, но часть записей им не расшифровывается');
+      }
+
       document.getElementById('access').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
+      document.getElementById('offlineNotice').classList.add('hidden');
+
+      input.value = '';
       render();
       startAutoSync();
-    } catch (err) {
+      } catch (err) {
+      accessKey = '';
+      cryptoKey = null;
       error.textContent = '❌ ' + err.message;
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Открыть журнал';
     }
   }
 
   function startAutoSync() {
-    if (autoSyncTimer) clearInterval(autoSyncTimer);
+    clearInterval(autoSyncTimer);
 
     autoSyncTimer = setInterval(() => {
-      if (!editingId && document.visibilityState === 'visible') {
+      if (!editingId && document.visibilityState === 'visible' && cryptoKey) {
         loadEntries(false);
       }
     }, 10000);
@@ -779,37 +1151,52 @@
       document.execCommand(command, false, null);
 
       try {
-        this.classList.toggle('active', document.queryCommandState(command));
+        this.classList.toggle(
+          'active',
+          document.queryCommandState(command)
+        );
       } catch (_) {}
     });
   });
 
   document.querySelectorAll('.filter').forEach(button => {
     button.addEventListener('click', function() {
-      document.querySelectorAll('.filter').forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.filter').forEach(item => {
+        item.classList.remove('active');
+      });
+
       this.classList.add('active');
       currentFilter = this.dataset.filter;
       render();
     });
   });
 
-  document.getElementById('search').addEventListener('input', render);
-  document.getElementById('accessButton').addEventListener('click', submitAccess);
-  document.getElementById('accessKey').addEventListener('keydown', event => {
-    if (event.key === 'Enter') submitAccess();
+  document.getElementById('search').addEventListener('input', () => {
+    render();
   });
 
-  async function init() {
-    document.getElementById('entryDate').value = today();
+  document.getElementById('accessForm').addEventListener('submit', event => {
+    event.preventDefault();
+    submitAccess();
+  });
 
-    const connected = await loadEntries(false);
 
-    document.getElementById('loading').classList.add('hidden');
-
-    if (connected) {
-      document.getElementById('app').classList.remove('hidden');
-      startAutoSync();
+  function init() {
+    if (!window.crypto || !window.crypto.subtle) {
+      document.getElementById('loading').innerHTML = `
+        <div class="modal">
+          <div class="modal-icon">❌</div>
+          <h2>Шифрование недоступно</h2>
+          <p>Откройте приложение в современном браузере через HTTPS.</p>
+        </div>
+      `;
+      return;
     }
+
+    document.getElementById('entryDate').value = today();
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('access').classList.remove('hidden');
+    document.getElementById('accessKey').focus();
   }
 
   init();
