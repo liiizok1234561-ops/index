@@ -86,7 +86,6 @@
     .done{background:#dcfce7;color:#166534}
     .not_done{background:#e2e8f0;color:#334155}
     .pinned-badge{background:#fff3bf;color:#7a4b00}
-    .encrypted-badge{background:#dbeafe;color:#1e40af}
     .legacy-badge{background:#ffedd5;color:#9a3412}
     .preview{margin-top:8px;color:#334155;cursor:pointer;padding:6px;border-radius:7px}
     .preview:hover{background:#f8fafc}
@@ -164,10 +163,10 @@
 <main id="app" class="page hidden">
   <header class="header">
     <div class="brand">
-      <div class="brand-icon">🔐</div>
+      <div class="brand-icon">📋</div>
       <div>
         <h1>Журнал передачи смен</h1>
-        <small>Зашифрованные данные · пароль можно сохранить в браузере</small>
+        <small>Общие данные для сотрудников · пароль можно сохранить в браузере</small>
       </div>
     </div>
     <div class="header-actions">
@@ -180,7 +179,7 @@
 
   <section class="content">
     <div id="offlineNotice" class="notice offline hidden">
-      Нет связи с таблицей. Показана локальная зашифрованная копия.
+      Не удалось загрузить данные из общей таблицы. Ниже показана последняя копия, сохранённая на этом устройстве.
     </div>
 
     <div id="legacyNotice" class="notice legacy-notice hidden">
@@ -934,7 +933,7 @@
       : '';
 
     const securityBadge = entry.encrypted
-      ? '<span class="badge encrypted-badge">🔐 Зашифровано</span>'
+      ? ''
       : '<span class="badge legacy-badge">⚠️ Не зашифровано</span>';
 
     return `
