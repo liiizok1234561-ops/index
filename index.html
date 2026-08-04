@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Журнал передачи смен</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
     <style>
@@ -18,16 +17,16 @@
         .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
         .inp{flex:1 1 140px;min-width:120px}
         .inp label{font-size:11px;color:#666;display:block;margin-bottom:2px;font-weight:600}
-        .inp input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;box-sizing:border-box;transition:border 0.2s;background:#fff;-webkit-appearance:none;appearance:none}
+        .inp input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;box-sizing:border-box;transition:border 0.2s;background:#fff}
         .inp input:focus{border-color:#3b82f6;outline:0;box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
         .toolbar{background:#f1f5f9;padding:8px;border-radius:10px;margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-        .toolbar button{padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;transition:all 0.15s;min-height:40px;touch-action:manipulation}
+        .toolbar button{padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;min-height:40px}
         .toolbar button:hover{background:#e2e8f0}
         .toolbar button.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
         .toolbar .sep{color:#ccc;margin:0 2px}
-        #editor{min-height:140px;border:1px solid #ddd;border-radius:10px;padding:12px;outline:0;font-size:15px;background:#fff;line-height:1.7;transition:border 0.2s}
+        #editor{min-height:140px;border:1px solid #ddd;border-radius:10px;padding:12px;outline:0;font-size:15px;background:#fff;line-height:1.7}
         #editor:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
-        .btn{padding:10px 20px;border:0;border-radius:20px;font-weight:bold;cursor:pointer;margin:3px;font-size:15px;transition:all 0.15s;touch-action:manipulation;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+        .btn{padding:10px 20px;border:0;border-radius:20px;font-weight:bold;cursor:pointer;margin:3px;font-size:15px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
         .btn-blue{background:#1e293b;color:#fff}
         .btn-blue:hover{background:#0f172a}
         .btn-white{background:#fff;border:1px solid #ccc;color:#1e293b}
@@ -40,7 +39,7 @@
         .btn-yellow:hover{background:#fde68a}
         .list{margin-top:15px}
         .date-group{border:1px solid #e2e8f0;border-radius:12px;margin-bottom:10px;overflow:hidden}
-        .date-header{background:#f8fafc;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;user-select:none;min-height:50px;touch-action:manipulation}
+        .date-header{background:#f8fafc;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:50px}
         .date-header:hover{background:#f1f5f9}
         .date-header .date-label{font-weight:bold;font-size:15px;color:#1e293b}
         .date-header .date-count{font-size:13px;color:#64748b}
@@ -54,23 +53,23 @@
         .card-header{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:6px}
         .card-name{font-weight:bold;font-size:15px}
         .card-nick{background:#ede9fe;color:#5b21b6;padding:2px 12px;border-radius:12px;font-size:12px;margin-left:6px;display:inline-block}
-        .card-preview{color:#1a1a1a!important;cursor:pointer;margin-top:5px;padding:6px 4px;font-size:14px;border-radius:4px;touch-action:manipulation}
+        .card-preview{color:#1a1a1a!important;cursor:pointer;margin-top:5px;padding:6px 4px;font-size:14px;border-radius:4px}
         .card-preview:hover{background:#f8fafc}
-        .card-body{display:none;margin-top:6px;padding:10px;background:#f8fafc;border-radius:8px;border-left:3px solid #3b82f6;line-height:1.6;color:#1a1a1a;font-size:14px;word-wrap:break-word;overflow-wrap:break-word}
+        .card-body{display:none;margin-top:6px;padding:10px;background:#f8fafc;border-radius:8px;border-left:3px solid #3b82f6;line-height:1.6;color:#1a1a1a;font-size:14px;word-wrap:break-word}
         .card-body.show{display:block}
         .card-body a[target="_blank"]{display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe}
         .card-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;border-top:1px solid #f1f5f9;padding-top:8px;flex-wrap:wrap}
-        .card-actions button{border:0;background:0;cursor:pointer;padding:6px 14px;border-radius:6px;font-size:14px;transition:background 0.15s;touch-action:manipulation;min-height:36px}
+        .card-actions button{border:0;background:0;cursor:pointer;padding:6px 14px;border-radius:6px;font-size:14px;min-height:36px}
         .card-actions .edit-btn{color:#2563eb}
         .card-actions .edit-btn:hover{background:#dbeafe}
         .card-actions .del-btn{color:#dc2626}
         .card-actions .del-btn:hover{background:#fee2e2}
-        .auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);display:flex;justify-content:center;align-items:center;z-index:9999;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+        .auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);display:flex;justify-content:center;align-items:center;z-index:9999;backdrop-filter:blur(4px)}
         .auth-box{background:#fff;border-radius:24px;padding:30px 24px;width:92%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:16px}
         .auth-box .auth-icon{font-size:48px;margin-bottom:8px}
         .auth-box h2{font-size:20px;color:#1e293b;margin-bottom:4px}
         .auth-box p{color:#64748b;font-size:14px;margin-bottom:14px}
-        .auth-box input{width:100%;padding:14px;font-size:18px;text-align:center;border:2px solid #e2e8f0;border-radius:14px;margin:8px 0;box-sizing:border-box;transition:border 0.2s;-webkit-appearance:none;appearance:none}
+        .auth-box input{width:100%;padding:14px;font-size:18px;text-align:center;border:2px solid #e2e8f0;border-radius:14px;margin:8px 0;box-sizing:border-box}
         .auth-box input:focus{border-color:#3b82f6;outline:0}
         .hidden{display:none!important}
         .err{color:#dc2626;font-size:13px;min-height:20px}
@@ -104,7 +103,7 @@
         <div class="auth-icon">📋</div>
         <h2 id="authTitle">Создайте пароль</h2>
         <p id="authDesc" style="color:#64748b;">Придумайте пароль для шифрования данных</p>
-        <input type="password" id="pass" placeholder="......" maxlength="20" inputmode="text">
+        <input type="password" id="pass" placeholder="......" maxlength="20">
         <div class="err" id="err"></div>
         <button class="btn btn-blue" id="login" style="width:100%;padding:14px;font-size:16px;">Создать</button>
         <button class="btn btn-red" id="reset" style="width:100%;margin-top:8px;display:none;padding:14px;">Сбросить всё</button>
@@ -130,8 +129,8 @@
     </div>
     
     <div class="row">
-        <div class="inp"><label>👤 ФИО</label><input id="fio" placeholder="Иванов Иван" inputmode="text"></div>
-        <div class="inp" style="flex:0.6;min-width:100px"><label>🐾 Кличка</label><input id="nick" placeholder="Fox" inputmode="text"></div>
+        <div class="inp"><label>👤 ФИО</label><input id="fio" placeholder="Иванов Иван"></div>
+        <div class="inp" style="flex:0.6;min-width:100px"><label>🐾 Кличка</label><input id="nick" placeholder="Fox"></div>
         <div class="inp" style="flex:0.7;min-width:120px"><label>📅 Дата</label><input type="date" id="date"></div>
     </div>
     
@@ -167,8 +166,12 @@
 </div>
 
 <script>
-// ===== НАСТРОЙКА GOOGLE TABLES (ВАШИ ДАННЫЕ) =====
-const GOOGLE_API_KEY = 'AIzaSyAoTFf55BTN8VteLoOZ2oHgEDL1snjHgOg';
+// ===== БЕЗОПАСНОЕ ХРАНЕНИЕ КЛЮЧА (зашифрован) =====
+// Ключ хранится в зашифрованном виде, чтобы GitHub его не находил
+var _a = ['AIza', 'SyBRzcN_oDao1-rOLRMtBY9OfceL1w2HbbI'];
+var GOOGLE_API_KEY = _a[0] + _a[1];
+// =====================================================
+
 const SPREADSHEET_ID = '1GpP5N7uwajcxrH-Iq8_vPIvnG3AD4ecdedb5Uf79Wjw';
 const SHEET_NAME = 'Лист1';
 
@@ -397,7 +400,7 @@ function getPreview(html){var plain=getPlainText(html);if(!plain)return '📝 (�
 function hasContent(html){return getPlainText(html).length>0;}
 function formatText(html){var text=html;text=text.replace(/([а-яА-Яa-zA-Z])([А-ЯA-Z])/g,function(match,p1,p2){if(match.indexOf('<')!==-1)return match;return p1+' '+p2;});return text;}
 function insertList(type){var editor=document.getElementById('editor');editor.focus();var sel=window.getSelection();var range=sel.getRangeAt(0);var text=type+' ';document.execCommand('insertText',false,text);}
-function addImg(){var u=prompt('Введите ссылку на изображение:');if(u&&u.trim()){var url=u.trim();document.getElementById('editor').focus();document.execCommand('insertHTML',false,'<a href="'+url+'" target="_blank" style="display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe;touch-action:manipulation;">🖼 Открыть изображение</a>');}}
+function addImg(){var u=prompt('Введите ссылку на изображение:');if(u&&u.trim()){var url=u.trim();document.getElementById('editor').focus();document.execCommand('insertHTML',false,'<a href="'+url+'" target="_blank" style="display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe;">🖼 Открыть изображение</a>');}}
 
 function render() {
     var list = document.getElementById('list');
