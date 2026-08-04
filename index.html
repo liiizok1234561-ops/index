@@ -273,6 +273,7 @@
   let currentFilter = 'all';
   let autoSyncTimer = null;
   const expandedCards = new Set();
+  const expandedDateGroups = new Set();
 
   // Пароль и криптографический ключ существуют только в памяти вкладки.
   let accessKey = '';
@@ -997,16 +998,19 @@
       const items = groups[date];
       const cards = items.map(renderCard).join('');
 
+      const dateKey = String(date);
+      const isExpanded = expandedDateGroups.has(dateKey);
+
       return `
-        <section class="date-group">
-          <div class="date-head" onclick="toggleDateGroup(this)">
+        <section class="date-group" data-date="${escapeHtml(dateKey)}">
+          <div class="date-head" onclick="toggleDateGroup('${escapeHtml(dateKey)}', this)">
             <span class="date-label">📅 ${escapeHtml(formatDate(date))}</span>
             <span class="date-meta">
               ${items.length} ${entryWord(items.length)}
-              <span class="arrow">▼</span>
+              <span class="arrow${isExpanded ? '' : ' closed'}">▼</span>
             </span>
           </div>
-          <div class="date-items">${cards}</div>
+          <div class="date-items${isExpanded ? '' : ' closed'}">${cards}</div>
         </section>
       `;
     }).join('');
@@ -1032,7 +1036,7 @@
       : previewText(entry.html);
 
     return `
-      <article class="card${pinClass}${legacyClass}">
+      <article class="card${pinClass}${legacyClass}" onclick="event.stopPropagation()">
         <div class="card-top">
           <div>
             <span class="person">${escapeHtml(entry.fullName)}</span>
@@ -1071,12 +1075,25 @@
     return 'записей';
   }
 
-  function toggleDateGroup(head) {
-    const items = head.nextElementSibling;
+  function toggleDateGroup(dateKey, head) {
+    const group = head.closest('.date-group');
+    if (!group) return;
+
+    const items = group.querySelector(':scope > .date-items');
     const arrow = head.querySelector('.arrow');
 
-    items.classList.toggle('closed');
-    arrow.classList.toggle('closed');
+    if (!items || !arrow) return;
+
+    const willExpand = items.classList.contains('closed');
+
+    items.classList.toggle('closed', !willExpand);
+    arrow.classList.toggle('closed', !willExpand);
+
+    if (willExpand) {
+      expandedDateGroups.add(String(dateKey));
+    } else {
+      expandedDateGroups.delete(String(dateKey));
+    }
   }
 
   function toggleCard(id, domId, preview) {
