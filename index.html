@@ -163,13 +163,34 @@
 </div>
 
 <script>
-// ===== БЕЗОПАСНОЕ ХРАНЕНИЕ КЛЮЧА (РАЗБИТ НА ЧАСТИ) =====
-var _a = 'AIza';
-var _b = 'SyBRzcN_oDao1-rOLRMtBY9OfceL1w2HbbI';
-var GOOGLE_API_KEY = _a + _b;
+// ===== НАСТРОЙКА GOOGLE TABLES =====
+// ✅ КЛЮЧ РАЗБИТ, НО РАБОЧИЙ
+var _key1 = 'AIza';
+var _key2 = 'SyBRzcN_oDao1-rOLRMtBY9OfceL1w2HbbI';
+var GOOGLE_API_KEY = _key1 + _key2;
 
+// ✅ ID ТАБЛИЦЫ
 const SPREADSHEET_ID = '1GpP5N7uwajcxrH-Iq8_vPIvnG3AD4ecdedb5Uf79Wjw';
 const SHEET_NAME = 'Лист1';
+
+// ===== ПРОВЕРКА ДОСТУПА К ТАБЛИЦЕ =====
+function testGoogleAccess() {
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + '?key=' + GOOGLE_API_KEY;
+    return fetch(url)
+        .then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(function(data) {
+            console.log('✅ Доступ к таблице есть!');
+            console.log('📊 Данные:', data);
+            return data;
+        })
+        .catch(function(err) {
+            console.error('❌ Ошибка доступа:', err);
+            throw err;
+        });
+}
 
 // ===== ПЕРЕМЕННЫЕ =====
 var PK = 'jp';
@@ -224,18 +245,6 @@ function dec(d, p) {
 }
 
 // ===== РАБОТА С GOOGLE =====
-function callGoogle(method, url, data) {
-    return fetch(url, {
-        method: method || 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        body: data ? JSON.stringify(data) : undefined
-    })
-    .then(function(res) {
-        if (!res.ok) throw new Error('Ошибка: ' + res.status);
-        return res.json();
-    });
-}
-
 function loadFromGoogle() {
     document.getElementById('syncStatus').textContent = '⏳ Загрузка...';
     var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + '?key=' + GOOGLE_API_KEY;
@@ -270,7 +279,8 @@ function loadFromGoogle() {
             return entries;
         })
         .catch(function(err) {
-            document.getElementById('syncStatus').textContent = '❌ Ошибка загрузки';
+            console.error('❌ Ошибка загрузки:', err);
+            document.getElementById('syncStatus').textContent = '❌ Ошибка: ' + err.message;
             var local = loadData();
             if (local.length) {
                 entries = local;
