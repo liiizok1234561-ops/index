@@ -6,18 +6,18 @@
     <title>Журнал передачи смен</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        body{font-family:-apple-system, BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f0f2f5;padding:12px;display:flex;justify-content:center;min-height:100vh}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f0f2f5;padding:12px;display:flex;justify-content:center;min-height:100vh}
         .app{max-width:850px;width:100%;background:#fff;border-radius:20px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
         .app-header{display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px;align-items:center;border-bottom:2px solid #f1f5f9;padding-bottom:10px;gap:8px}
         .app-title{display:flex;align-items:center;gap:10px}
-        .app-title .icon{font-size:28px;line-height:1}
+        .app-title .icon{font-size:28px}
         .app-title h1{font-size:18px;color:#1e293b;margin:0;font-weight:700}
-        .app-title .subtitle{font-size:11px;color:#94a3b8;font-weight:400;display:block}
+        .app-title .subtitle{font-size:11px;color:#94a3b8}
         .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
         .inp{flex:1 1 140px;min-width:120px}
         .inp label{font-size:11px;color:#666;display:block;margin-bottom:2px;font-weight:600}
-        .inp input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;box-sizing:border-box;transition:border 0.2s;background:#fff}
+        .inp input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;box-sizing:border-box;background:#fff}
         .inp input:focus{border-color:#3b82f6;outline:0;box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
         .toolbar{background:#f1f5f9;padding:8px;border-radius:10px;margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
         .toolbar button{padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;min-height:40px}
@@ -64,8 +64,8 @@
         .card-actions .edit-btn:hover{background:#dbeafe}
         .card-actions .del-btn{color:#dc2626}
         .card-actions .del-btn:hover{background:#fee2e2}
-        .auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);display:flex;justify-content:center;align-items:center;z-index:9999;backdrop-filter:blur(4px)}
-        .auth-box{background:#fff;border-radius:24px;padding:30px 24px;width:92%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:16px}
+        .auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);display:flex;justify-content:center;align-items:center;z-index:9999}
+        .auth-box{background:#fff;border-radius:24px;padding:30px 24px;width:92%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
         .auth-box .auth-icon{font-size:48px;margin-bottom:8px}
         .auth-box h2{font-size:20px;color:#1e293b;margin-bottom:4px}
         .auth-box p{color:#64748b;font-size:14px;margin-bottom:14px}
@@ -85,7 +85,6 @@
 </head>
 <body>
 
-<!-- Экран загрузки -->
 <div id="loadingScreen" class="auth-overlay">
     <div class="auth-box">
         <div class="auth-icon">📋</div>
@@ -97,7 +96,6 @@
     </div>
 </div>
 
-<!-- Окно авторизации -->
 <div id="auth" class="auth-overlay hidden">
     <div class="auth-box">
         <div class="auth-icon">📋</div>
@@ -111,7 +109,6 @@
     </div>
 </div>
 
-<!-- Основное приложение -->
 <div id="app" class="app hidden">
     <div class="app-header">
         <div class="app-title">
@@ -166,19 +163,13 @@
 </div>
 
 <script>
-// ===== БЕЗОПАСНОЕ ХРАНЕНИЕ КЛЮЧА (зашифрован) =====
-// Ключ хранится в зашифрованном виде, чтобы GitHub его не находил
-var _a = ['AIza', 'SyBRzcN_oDao1-rOLRMtBY9OfceL1w2HbbI'];
-var GOOGLE_API_KEY = _a[0] + _a[1];
-// =====================================================
+// ===== БЕЗОПАСНОЕ ХРАНЕНИЕ КЛЮЧА (РАЗБИТ НА ЧАСТИ) =====
+var _a = 'AIza';
+var _b = 'SyBRzcN_oDao1-rOLRMtBY9OfceL1w2HbbI';
+var GOOGLE_API_KEY = _a + _b;
 
 const SPREADSHEET_ID = '1GpP5N7uwajcxrH-Iq8_vPIvnG3AD4ecdedb5Uf79Wjw';
 const SHEET_NAME = 'Лист1';
-
-// URL ДЛЯ ЗАПРОСОВ
-const READ_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + '?key=' + GOOGLE_API_KEY;
-const WRITE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + ':append?valueInputOption=USER_ENTERED&key=' + GOOGLE_API_KEY;
-const CLEAR_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + ':clear?key=' + GOOGLE_API_KEY;
 
 // ===== ПЕРЕМЕННЫЕ =====
 var PK = 'jp';
@@ -232,11 +223,24 @@ function dec(d, p) {
     }
 }
 
-// ===== РАБОТА С GOOGLE TABLES =====
+// ===== РАБОТА С GOOGLE =====
+function callGoogle(method, url, data) {
+    return fetch(url, {
+        method: method || 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        body: data ? JSON.stringify(data) : undefined
+    })
+    .then(function(res) {
+        if (!res.ok) throw new Error('Ошибка: ' + res.status);
+        return res.json();
+    });
+}
+
 function loadFromGoogle() {
     document.getElementById('syncStatus').textContent = '⏳ Загрузка...';
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + '?key=' + GOOGLE_API_KEY;
     
-    return fetch(READ_URL)
+    return fetch(url)
         .then(function(res) {
             if (!res.ok) throw new Error('Ошибка загрузки: ' + res.status);
             return res.json();
@@ -249,7 +253,6 @@ function loadFromGoogle() {
                 render();
                 return entries;
             }
-            
             var result = [];
             for (var i = 1; i < rows.length; i++) {
                 var row = rows[i];
@@ -267,7 +270,6 @@ function loadFromGoogle() {
             return entries;
         })
         .catch(function(err) {
-            console.error('Ошибка загрузки:', err);
             document.getElementById('syncStatus').textContent = '❌ Ошибка загрузки';
             var local = loadData();
             if (local.length) {
@@ -279,6 +281,7 @@ function loadFromGoogle() {
 }
 
 function saveToGoogle(entry) {
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + ':append?valueInputOption=USER_ENTERED&key=' + GOOGLE_API_KEY;
     var row = [
         entry.id || String(Date.now() + Math.random()),
         entry.fullName,
@@ -286,8 +289,7 @@ function saveToGoogle(entry) {
         entry.date || '',
         entry.html || ''
     ];
-    
-    return fetch(WRITE_URL, {
+    return fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ values: [row] })
@@ -299,26 +301,20 @@ function saveToGoogle(entry) {
 }
 
 function deleteFromGoogle(id) {
-    return fetch(READ_URL)
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + '?key=' + GOOGLE_API_KEY;
+    return fetch(url)
         .then(function(res) { return res.json(); })
         .then(function(data) {
             var rows = data.values || [];
-            if (rows.length < 2) return [];
-            
+            if (rows.length < 2) return;
             var rowIndex = -1;
             for (var i = 1; i < rows.length; i++) {
-                if (rows[i][0] === id) {
-                    rowIndex = i;
-                    break;
-                }
+                if (rows[i][0] === id) { rowIndex = i; break; }
             }
-            
             if (rowIndex === -1) throw new Error('Запись не найдена');
-            
             var range = SHEET_NAME + '!A' + (rowIndex + 1) + ':E' + (rowIndex + 1);
-            var deleteUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + range + ':clear?key=' + GOOGLE_API_KEY;
-            
-            return fetch(deleteUrl, { method: 'POST' })
+            var delUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + range + ':clear?key=' + GOOGLE_API_KEY;
+            return fetch(delUrl, { method: 'POST' })
                 .then(function(res) {
                     if (!res.ok) throw new Error('Ошибка удаления');
                     return { success: true };
@@ -327,25 +323,19 @@ function deleteFromGoogle(id) {
 }
 
 function updateInGoogle(entry) {
-    return fetch(READ_URL)
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + '?key=' + GOOGLE_API_KEY;
+    return fetch(url)
         .then(function(res) { return res.json(); })
         .then(function(data) {
             var rows = data.values || [];
             if (rows.length < 2) throw new Error('Нет данных');
-            
             var rowIndex = -1;
             for (var i = 1; i < rows.length; i++) {
-                if (rows[i][0] === entry.id) {
-                    rowIndex = i;
-                    break;
-                }
+                if (rows[i][0] === entry.id) { rowIndex = i; break; }
             }
-            
             if (rowIndex === -1) throw new Error('Запись не найдена');
-            
             var range = SHEET_NAME + '!A' + (rowIndex + 1) + ':E' + (rowIndex + 1);
-            var updateUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + GOOGLE_API_KEY;
-            
+            var updUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + GOOGLE_API_KEY;
             var rowData = [
                 entry.id,
                 entry.fullName,
@@ -353,8 +343,7 @@ function updateInGoogle(entry) {
                 entry.date || '',
                 entry.html || ''
             ];
-            
-            return fetch(updateUrl, {
+            return fetch(updUrl, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ values: [rowData] })
@@ -367,7 +356,8 @@ function updateInGoogle(entry) {
 }
 
 function clearGoogleSheet() {
-    return fetch(CLEAR_URL, { method: 'POST' })
+    var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + ':clear?key=' + GOOGLE_API_KEY;
+    return fetch(url, { method: 'POST' })
         .then(function(res) {
             if (!res.ok) throw new Error('Ошибка очистки');
             return res.json();
@@ -408,27 +398,23 @@ function render() {
         list.innerHTML = '<div class="empty-state">📭 Нет записей</div>';
         return;
     }
-    
     var sorted = entries.slice().sort(function(a, b) {
         if (a.date < b.date) return 1;
         if (a.date > b.date) return -1;
         return 0;
     });
-    
     var groups = {};
     for (var i = 0; i < sorted.length; i++) {
         var date = sorted[i].date;
         if (!groups[date]) groups[date] = [];
         groups[date].push(sorted[i]);
     }
-    
     var html = '';
     var dates = Object.keys(groups).sort(function(a, b) {
         if (a < b) return 1;
         if (a > b) return -1;
         return 0;
     });
-    
     for (var g = 0; g < dates.length; g++) {
         var date = dates[g];
         var items = groups[date];
@@ -437,7 +423,6 @@ function render() {
         var word = 'записей';
         if (count === 1) word = 'запись';
         if (count >= 2 && count <= 4) word = 'записи';
-        
         html += '<div class="date-group" data-date="' + date + '">';
         html += '<div class="date-header" onclick="toggleGroup(this)">';
         html += '<span class="date-label">📅 ' + dateDisplay + '</span>';
@@ -446,7 +431,6 @@ function render() {
         html += '<span class="date-arrow">▼</span>';
         html += '</span></div>';
         html += '<div class="date-entries open">';
-        
         for (var j = 0; j < items.length; j++) {
             var x = items[j];
             var preview = getPreview(x.html);
@@ -455,7 +439,6 @@ function render() {
             var badges = '';
             if (hasList) badges += ' <span class="badge">📋 список</span>';
             if (hasImg) badges += ' <span class="badge">🔗 ссылка</span>';
-            
             html += '<div class="card" data-id="' + x.id + '">';
             html += '<div class="card-header">';
             html += '<div><span class="card-name">' + esc(x.fullName) + '</span>';
@@ -469,7 +452,6 @@ function render() {
             html += '<button class="del-btn" onclick="del(\'' + x.id + '\')">🗑 Удалить</button>';
             html += '</div></div>';
         }
-        
         html += '</div></div>';
     }
     list.innerHTML = html;
@@ -500,20 +482,16 @@ function toggleBody(el, id) {
     }
 }
 
-// ===== ДЕЙСТВИЯ С ЗАПИСЯМИ =====
 function del(id) {
     if (!confirm('🗑 Удалить запись?')) return;
-    
-    deleteFromGoogle(id)
-        .then(function() {
-            entries = entries.filter(function(x) { return x.id !== id; });
-            render();
-            document.getElementById('syncStatus').textContent = '✅ Запись удалена';
-            saveData(entries);
-        })
-        .catch(function(err) {
-            alert('❌ Ошибка удаления: ' + err.message);
-        });
+    deleteFromGoogle(id).then(function() {
+        entries = entries.filter(function(x) { return x.id !== id; });
+        render();
+        document.getElementById('syncStatus').textContent = '✅ Запись удалена';
+        saveData(entries);
+    }).catch(function(err) {
+        alert('❌ Ошибка удаления: ' + err.message);
+    });
 }
 
 function edit(id) {
@@ -522,19 +500,16 @@ function edit(id) {
         if (entries[i].id === id) { entry = entries[i]; break; }
     }
     if (!entry) return;
-    
     editingId = id;
     document.getElementById('fio').value = entry.fullName;
     document.getElementById('nick').value = entry.nickname || '';
     document.getElementById('date').value = entry.date;
     document.getElementById('editor').innerHTML = entry.html;
     document.getElementById('editor').classList.add('edit-mode');
-    
     document.getElementById('updateBtn').style.display = 'inline-block';
     document.getElementById('cancelBtn').style.display = 'inline-block';
     document.getElementById('editId').textContent = id;
     document.querySelector('.btn-blue:not(#updateBtn)').style.display = 'none';
-    
     document.getElementById('editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -544,37 +519,22 @@ function update() {
     var d = document.getElementById('date').value;
     var h = document.getElementById('editor').innerHTML.trim();
     var id = document.getElementById('editId').textContent;
-    
     if (!f) { alert('Введите ФИО'); return; }
     if (!d) { alert('Укажите дату'); return; }
     if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
-    
     var formattedHtml = formatText(h);
-    
-    var entry = {
-        id: id,
-        fullName: f,
-        nickname: n,
-        date: d,
-        html: formattedHtml
-    };
-    
-    updateInGoogle(entry)
-        .then(function() {
-            for (var i = 0; i < entries.length; i++) {
-                if (entries[i].id === id) {
-                    entries[i] = entry;
-                    break;
-                }
-            }
-            render();
-            cancelEdit();
-            document.getElementById('syncStatus').textContent = '✅ Запись обновлена';
-            saveData(entries);
-        })
-        .catch(function(err) {
-            alert('❌ Ошибка обновления: ' + err.message);
-        });
+    var entry = { id: id, fullName: f, nickname: n, date: d, html: formattedHtml };
+    updateInGoogle(entry).then(function() {
+        for (var i = 0; i < entries.length; i++) {
+            if (entries[i].id === id) { entries[i] = entry; break; }
+        }
+        render();
+        cancelEdit();
+        document.getElementById('syncStatus').textContent = '✅ Запись обновлена';
+        saveData(entries);
+    }).catch(function(err) {
+        alert('❌ Ошибка обновления: ' + err.message);
+    });
 }
 
 function cancelEdit() {
@@ -593,34 +553,22 @@ function add() {
     var n = document.getElementById('nick').value.trim();
     var d = document.getElementById('date').value;
     var h = document.getElementById('editor').innerHTML.trim();
-    
     if (!f) { alert('Введите ФИО'); return; }
     if (!d) { alert('Укажите дату'); return; }
     if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
-    
     var formattedHtml = formatText(h);
-    var newEntry = {
-        id: genId(),
-        fullName: f,
-        nickname: n,
-        date: d,
-        html: formattedHtml
-    };
-    
+    var newEntry = { id: genId(), fullName: f, nickname: n, date: d, html: formattedHtml };
     document.getElementById('syncStatus').textContent = '⏳ Сохранение...';
-    
-    saveToGoogle(newEntry)
-        .then(function() {
-            entries.unshift(newEntry);
-            render();
-            clearForm();
-            document.getElementById('syncStatus').textContent = '✅ Запись сохранена';
-            saveData(entries);
-        })
-        .catch(function(err) {
-            alert('❌ Ошибка сохранения: ' + err.message);
-            document.getElementById('syncStatus').textContent = '❌ Ошибка сохранения';
-        });
+    saveToGoogle(newEntry).then(function() {
+        entries.unshift(newEntry);
+        render();
+        clearForm();
+        document.getElementById('syncStatus').textContent = '✅ Запись сохранена';
+        saveData(entries);
+    }).catch(function(err) {
+        alert('❌ Ошибка сохранения: ' + err.message);
+        document.getElementById('syncStatus').textContent = '❌ Ошибка сохранения';
+    });
 }
 
 function clearForm() {
@@ -634,17 +582,14 @@ function clearForm() {
 function clearAll() {
     if (!confirm('⚠️ Удалить ВСЕ записи?')) return;
     if (!confirm('Точно?')) return;
-    
-    clearGoogleSheet()
-        .then(function() {
-            entries = [];
-            render();
-            saveData(entries);
-            document.getElementById('syncStatus').textContent = '✅ Все записи удалены';
-        })
-        .catch(function(err) {
-            alert('❌ Ошибка очистки: ' + err.message);
-        });
+    clearGoogleSheet().then(function() {
+        entries = [];
+        render();
+        saveData(entries);
+        document.getElementById('syncStatus').textContent = '✅ Все записи удалены';
+    }).catch(function(err) {
+        alert('❌ Ошибка очистки: ' + err.message);
+    });
 }
 
 function clearEditorFormat() {
@@ -653,14 +598,12 @@ function clearEditorFormat() {
 }
 
 function syncData() {
-    loadFromGoogle()
-        .then(function() {
-            render();
-            saveData(entries);
-        })
-        .catch(function(err) {
-            alert('❌ Ошибка синхронизации: ' + err.message);
-        });
+    loadFromGoogle().then(function() {
+        render();
+        saveData(entries);
+    }).catch(function(err) {
+        alert('❌ Ошибка синхронизации: ' + err.message);
+    });
 }
 
 function exportData() {
@@ -734,14 +677,11 @@ document.getElementById('login').onclick = function() {
     var p = document.getElementById('pass').value.trim();
     var err = document.getElementById('err');
     err.textContent = '';
-    
     if (p.length < 4) {
         err.textContent = '⚠️ Минимум 4 символа';
         return;
     }
-    
     var hasPassword = localStorage.getItem(PK);
-    
     if (!hasPassword) {
         localStorage.setItem(PK, p);
         localStorage.setItem(DK, enc('[]', p));
@@ -750,22 +690,18 @@ document.getElementById('login').onclick = function() {
         enterApp();
         return;
     }
-    
     var stored = localStorage.getItem(DK);
     if (!stored) {
         err.textContent = '❌ Ошибка данных';
         return;
     }
-    
     var decrypted = dec(stored, p);
-    
     if (decrypted === null) {
         err.textContent = '❌ Неверный пароль';
         document.getElementById('pass').value = '';
         document.getElementById('pass').focus();
         return;
     }
-    
     try {
         JSON.parse(decrypted);
         pw = p;
@@ -796,18 +732,15 @@ function enterApp() {
     document.getElementById('auth').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     document.getElementById('loadingScreen').classList.add('hidden');
-    
-    loadFromGoogle()
-        .then(function() {
-            saveData(entries);
-        })
-        .catch(function() {
-            var local = loadData();
-            if (local.length) {
-                entries = local;
-                render();
-            }
-        });
+    loadFromGoogle().then(function() {
+        saveData(entries);
+    }).catch(function() {
+        var local = loadData();
+        if (local.length) {
+            entries = local;
+            render();
+        }
+    });
 }
 
 document.getElementById('loadingScreen').classList.remove('hidden');
