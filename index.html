@@ -89,7 +89,7 @@
     .legacy-badge{background:#ffedd5;color:#9a3412}
     .preview{margin-top:8px;color:#334155;cursor:pointer;padding:6px;border-radius:7px}
     .preview:hover{background:#f8fafc}
-    .body{display:none;margin-top:7px;padding:11px;background:#f8fafc;border-radius:9px;border-left:3px solid #2563eb;line-height:1.6;overflow-wrap:anywhere}
+    .body{display:none;margin-top:7px;padding:11px;background:#f8fafc;border-radius:9px;border-left:3px solid #2563eb;line-height:1.6;overflow-wrap:anywhere;max-height:360px;overflow-y:auto;-webkit-overflow-scrolling:touch}
     .body.show{display:block}
     .body a{color:#2563eb}
     .card-actions{display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #eef2f6;margin-top:9px;padding-top:8px;flex-wrap:wrap}
@@ -272,6 +272,7 @@
   let editingId = null;
   let currentFilter = 'all';
   let autoSyncTimer = null;
+  const expandedCards = new Set();
 
   // Пароль и криптографический ключ существуют только в памяти вкладки.
   let accessKey = '';
@@ -838,6 +839,7 @@
 
       rawEntries = rawEntries.filter(item => String(item.id) !== cleanId);
       entries = entries.filter(item => String(item.id) !== cleanId);
+      expandedCards.delete(cleanId);
 
       localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
       updateLegacyNotice();
@@ -1024,6 +1026,11 @@
       ? ''
       : '<span class="badge legacy-badge">⚠️ Не зашифровано</span>';
 
+    const isExpanded = expandedCards.has(String(entry.id));
+    const previewLabel = isExpanded
+      ? '▲ Скрыть описание'
+      : previewText(entry.html);
+
     return `
       <article class="card${pinClass}${legacyClass}">
         <div class="card-top">
@@ -1040,12 +1047,12 @@
           </div>
         </div>
 
-        <div class="preview" onclick="toggleCard('${domId}', this)"
+        <div class="preview" onclick="toggleCard('${id}', '${domId}', this)"
              data-original="${escapeHtml(previewText(entry.html))}">
-          ${escapeHtml(previewText(entry.html))}
+          ${escapeHtml(previewLabel)}
         </div>
 
-        <div id="body-${domId}" class="body">${sanitizeRichHtml(entry.html || '')}</div>
+        <div id="body-${domId}" class="body${isExpanded ? ' show' : ''}">${sanitizeRichHtml(entry.html || '')}</div>
 
         <div class="card-actions">
           <button class="edit" onclick="beginEdit('${id}')">✏️ Редактировать</button>
@@ -1072,15 +1079,22 @@
     arrow.classList.toggle('closed');
   }
 
-  function toggleCard(domId, preview) {
+  function toggleCard(id, domId, preview) {
     const body = document.getElementById('body-' + domId);
     if (!body) return;
 
-    body.classList.toggle('show');
+    const cleanId = String(id);
+    const willOpen = !body.classList.contains('show');
 
-    preview.textContent = body.classList.contains('show')
-      ? '▲ Скрыть описание'
-      : preview.dataset.original;
+    body.classList.toggle('show', willOpen);
+
+    if (willOpen) {
+      expandedCards.add(cleanId);
+      preview.textContent = '▲ Скрыть описание';
+    } else {
+      expandedCards.delete(cleanId);
+      preview.textContent = preview.dataset.original;
+    }
   }
 
   function exportData() {
