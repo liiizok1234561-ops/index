@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <!-- 🔥 ГЛАВНОЕ ДЛЯ ТЕЛЕФОНОВ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Журнал передачи смен</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+    <style>
+        /* 🔥 БАЗОВЫЕ НАСТРОЙКИ ДЛЯ ТЕЛЕФОНОВ */
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        
+        body{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;background:#f0f2f5;padding:12px;display:flex;justify-content:center;min-height:100vh;min-height:100dvh}
+        
+        .app{max-width:850px;width:100%;background:#fff;border-radius:20px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+        
+        /* 🔥 ЗАГОЛОВОК */
+        .app-header{display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px;align-items:center;border-bottom:2px solid #f1f5f9;padding-bottom:10px;gap:8px}
+        .app-title{display:flex;align-items:center;gap:10px}
+        .app-title .icon{font-size:28px;line-height:1}
+        .app-title h1{font-size:18px;color:#1e293b;margin:0;font-weight:700}
+        .app-title .subtitle{font-size:11px;color:#94a3b8;font-weight:400;display:block}
+        
+        /* 🔥 ФОРМА - АДАПТИВ */
+        .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+        .inp{flex:1 1 140px;min-width:120px}
+        .inp label{font-size:11px;color:#666;display:block;margin-bottom:2px;font-weight:600}
+        .inp input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;box-sizing:border-box;transition:border 0.2s;background:#fff;-webkit-appearance:none;appearance:none}
+        .inp input:focus{border-color:#3b82f6;outline:0;box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
+        
+        /* 🔥 ТУЛБАР - КРУПНЫЕ КНОПКИ ДЛЯ ПАЛЬЦЕВ */
+        .toolbar{background:#f1f5f9;padding:8px;border-radius:10px;margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+        .toolbar button{padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;transition:all 0.15s;min-height:40px;touch-action:manipulation;display:flex;align-items:center;justify-content:center}
+        .toolbar button:hover{background:#e2e8f0}
+        .toolbar button.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
+        .toolbar .sep{color:#ccc;margin:0 2px}
+        
+        /* 🔥 РЕДАКТОР */
+        #editor{min-height:140px;border:1px solid #ddd;border-radius:10px;padding:12px;outline:0;font-size:15px;background:#fff;line-height:1.7;transition:border 0.2s;-webkit-user-select:text;user-select:text}
+        #editor:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
+        
+        /* 🔥 КНОПКИ - КРУПНЫЕ ДЛЯ ТЕЛЕФОНА */
+        .btn{padding:10px 20px;border:0;border-radius:20px;font-weight:bold;cursor:pointer;margin:3px;font-size:15px;transition:all 0.15s;touch-action:manipulation;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+        .btn-blue{background:#1e293b;color:#fff}
+        .btn-blue:hover{background:#0f172a;transform:translateY(-1px)}
+        .btn-white{background:#fff;border:1px solid #ccc;color:#1e293b}
+        .btn-white:hover{background:#f1f5f9}
+        .btn-red{background:#fee2e2;color:#991b1b}
+        .btn-red:hover{background:#fecaca}
+        .btn-green{background:#dcfce7;color:#166534}
+        .btn-green:hover{background:#bbf7d0}
+        
+        .list{margin-top:15px}
+        
+        /* 🔥 ГРУППЫ ДАТ - АДАПТИВ */
+        .date-group{border:1px solid #e2e8f0;border-radius:12px;margin-bottom:10px;overflow:hidden}
+        .date-header{background:#f8fafc;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;user-select:none;min-height:50px;touch-action:manipulation}
+        .date-header:hover{background:#f1f5f9}
+        .date-header .date-label{font-weight:bold;font-size:15px;color:#1e293b}
+        .date-header .date-count{font-size:13px;color:#64748b}
+        .date-header .date-arrow{font-size:14px;color:#94a3b8;transition:transform 0.3s}
+        .date-header .date-arrow.open{transform:rotate(180deg)}
+        .date-entries{display:none;padding:10px 12px;background:#fff}
+        .date-entries.open{display:block}
+        
+        /* 🔥 КАРТОЧКИ - АДАПТИВ */
+        .card{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:8px;background:#fff;transition:box-shadow 0.2s}
+        .card:last-child{margin-bottom:0}
+        .card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+        .card-header{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:6px}
+        .card-name{font-weight:bold;font-size:15px}
+        .card-nick{background:#ede9fe;color:#5b21b6;padding:2px 12px;border-radius:12px;font-size:12px;margin-left:6px;display:inline-block}
+        .card-preview{color:#1a1a1a!important;cursor:pointer;margin-top:5px;padding:6px 4px;font-size:14px;border-radius:4px;touch-action:manipulation}
+        .card-preview:hover{background:#f8fafc}
+        .card-body{display:none;margin-top:6px;padding:10px;background:#f8fafc;border-radius:8px;border-left:3px solid #3b82f6;line-height:1.6;color:#1a1a1a;font-size:14px;word-wrap:break-word;overflow-wrap:break-word}
+        .card-body.show{display:block}
+        .card-body ul,.card-body ol{padding-left:20px;margin:4px 0}
+        .card-body a[target="_blank"]{display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe;transition:all 0.2s;touch-action:manipulation}
+        .card-body a[target="_blank"]:hover{background:#dbeafe;transform:translateY(-1px)}
+        
+        .card-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;border-top:1px solid #f1f5f9;padding-top:8px;flex-wrap:wrap}
+        .card-actions button{border:0;background:0;cursor:pointer;padding:6px 14px;border-radius:6px;font-size:14px;transition:background 0.15s;touch-action:manipulation;min-height:36px}
+        .card-actions .edit-btn{color:#2563eb}
+        .card-actions .edit-btn:hover{background:#dbeafe}
+        .card-actions .del-btn{color:#dc2626}
+        .card-actions .del-btn:hover{background:#fee2e2}
+        
+        /* 🔥 ОКНО ВХОДА - АДАПТИВ */
+        .auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);display:flex;justify-content:center;align-items:center;z-index:9999;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+        .auth-box{background:#fff;border-radius:24px;padding:30px 24px;width:92%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);margin:16px}
+        .auth-box .auth-icon{font-size:48px;margin-bottom:8px}
+        .auth-box h2{font-size:20px;color:#1e293b;margin-bottom:4px}
+        .auth-box p{color:#64748b;font-size:14px;margin-bottom:14px}
+        .auth-box input{width:100%;padding:14px;font-size:18px;text-align:center;border:2px solid #e2e8f0;border-radius:14px;margin:8px 0;box-sizing:border-box;transition:border 0.2s;-webkit-appearance:none;appearance:none}
+        .auth-box input:focus{border-color:#3b82f6;outline:0}
+        .hidden{display:none!important}
+        .err{color:#dc2626;font-size:13px;min-height:20px}
+        .hint{color:#94a3b8;font-size:12px;margin-top:6px}
+        .empty-state{color:#94a3b8;text-align:center;padding:30px}
+        .edit-mode{border-color:#3b82f6!important;box-shadow:0 0 0 3px rgba(59,130,246,0.2)}
+        .badge{display:inline-block;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:4px}
+        .date-entries{transition:all 0.3s ease}
+        .card{animation:fadeIn 0.3s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        
+        /* 🔥 АДАПТИВ ДЛЯ МАЛЕНЬКИХ ЭКРАНОВ */
+        @media (max-width: 480px) {
+            body{padding:8px}
+            .app{padding:12px;border-radius:16px}
+            .app-title h1{font-size:16px}
+            .app-title .icon{font-size:24px}
+            .app-title .subtitle{font-size:10px}
+            .inp{flex:1 1 100%;min-width:100%}
+            .inp input{font-size:16px;padding:12px}
+            .toolbar button{font-size:13px;padding:6px 10px;min-height:36px}
+            .btn{padding:10px 16px;font-size:14px;min-height:40px}
+            .date-header{padding:12px 14px}
+            .date-header .date-label{font-size:14px}
+            .card{padding:10px}
+            .card-name{font-size:14px}
+            .card-preview{font-size:13px}
+            .card-body{font-size:13px}
+            .card-actions button{font-size:13px;padding:4px 10px}
+            .auth-box{padding:24px 16px}
+            .auth-box h2{font-size:18px}
+            .auth-box input{font-size:16px;padding:12px}
+            #editor{min-height:100px;font-size:15px;padding:10px}
+        }
+        
+        @media (max-width: 380px) {
+            .app{padding:8px;border-radius:12px}
+            .app-title h1{font-size:14px}
+            .toolbar{gap:4px}
+            .toolbar button{font-size:12px;padding:5px 8px;min-height:32px}
+            .btn{font-size:12px;padding:8px 12px;min-height:36px}
+            .date-header .date-label{font-size:13px}
+            .date-header .date-count{font-size:11px}
+        }
+        
+        /* 🔥 ДЛЯ ТЕЛЕФОНОВ С БОЛЬШИМИ ПАЛЬЦАМИ */
+        @media (pointer: coarse) {
+            .btn,.toolbar button,.card-actions button,.date-header{
+                min-height:44px;
+            }
+            .btn{padding:12px 24px}
+        }
+    </style>
+</head>
+<body>
+
+<!-- Окно авторизации -->
+<div id="auth" class="auth-overlay">
+    <div class="auth-box">
+        <div class="auth-icon">📋</div>
+        <h2 id="authTitle">Создайте пароль</h2>
+        <p id="authDesc" style="color:#64748b;">Придумайте пароль для шифрования данных</p>
+        <input type="password" id="pass" placeholder="......" maxlength="20" inputmode="text">
+        <div class="err" id="err"></div>
+        <button class="btn btn-blue" id="login" style="width:100%;padding:14px;font-size:16px;">Создать</button>
+        <button class="btn btn-red" id="reset" style="width:100%;margin-top:8px;display:none;padding:14px;">Сбросить всё</button>
+        <div class="hint" id="hint">Минимум 4 символа</div>
+    </div>
+</div>
+
+<!-- Основное приложение -->
+<div id="app" class="app hidden">
+    <div class="app-header">
+        <div class="app-title">
+            <span class="icon">📋</span>
+            <div>
+                <h1>Журнал передачи смен</h1>
+                <span class="subtitle">📌 Учёт и хранение записей</span>
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-green" onclick="clearAll()" style="font-size:12px;padding:6px 14px;min-height:36px;">🗑 Очистить всё</button>
+            <button class="btn btn-red" onclick="logout()" style="font-size:12px;padding:6px 14px;min-height:36px;">🚪 Выйти</button>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="inp"><label>👤 ФИО</label><input id="fio" placeholder="Иванов Иван" inputmode="text"></div>
+        <div class="inp" style="flex:0.6;min-width:100px"><label>🐾 Кличка</label><input id="nick" placeholder="Fox" inputmode="text"></div>
+        <div class="inp" style="flex:0.7;min-width:120px"><label>📅 Дата</label><input type="date" id="date"></div>
+    </div>
+    
+    <label style="font-size:12px;color:#666;font-weight:600;display:block;margin-bottom:4px;">📝 Описание</label>
+    <div class="toolbar">
+        <button type="button" data-cmd="bold"><b>B</b></button>
+        <button type="button" data-cmd="italic"><i>I</i></button>
+        <button type="button" data-cmd="underline"><u>U</u></button>
+        <span class="sep">|</span>
+        <button type="button" data-cmd="insertUnorderedList">• Список</button>
+        <button type="button" data-cmd="insertOrderedList">1. Список</button>
+        <span class="sep">|</span>
+        <button type="button" onclick="addImg()" style="color:#2563eb;">🔗 Ссылка</button>
+        <span class="sep">|</span>
+        <button type="button" onclick="clearEditorFormat()" style="color:#dc2626;">🧹 Очистить</button>
+    </div>
+    <div id="editor" contenteditable="true"></div>
+    
+    <div style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="btn btn-blue" onclick="add()">➕ Добавить</button>
+        <button class="btn btn-white" onclick="clearForm()">🧹 Очистить всё</button>
+        <button class="btn btn-white" onclick="exportData()">📤 Экспорт</button>
+        <span id="editId" style="display:none;"></span>
+        <button class="btn btn-blue" id="updateBtn" style="display:none;background:#2563eb;" onclick="update()">💾 Обновить</button>
+        <button class="btn btn-white" id="cancelBtn" style="display:none;" onclick="cancelEdit()">❌ Отмена</button>
+    </div>
+    
+    <h2 style="font-size:16px;margin-top:20px;color:#1e293b;">📖 Последние записи</h2>
+    <div id="list" class="list"></div>
+</div>
+
+<script>
+// ===== ШИФРОВАНИЕ =====
+var PK = 'jp';
+var DK = 'jd';
+var pw = null;
+var editingId = null;
+
+function utf8ToBase64(str) {
+    var bytes = new TextEncoder().encode(str);
+    var binary = '';
+    for (var i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function base64ToUtf8(base64) {
+    try {
+        var binary = atob(base64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+    } catch (e) {
+        return null;
+    }
+}
+
+function xor(s, k) {
+    var r = '';
+    for (var i = 0; i < s.length; i++) {
+        r += String.fromCharCode(s.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+    }
+    return r;
+}
+
+function enc(d, p) {
+    return utf8ToBase64(xor(d, p));
+}
+
+function dec(d, p) {
+    try {
+        var x = base64ToUtf8(d);
+        if (x === null) return null;
+        return xor(x, p);
+    } catch (e) {
+        return null;
+    }
+}
+
+// ===== ВСПОМОГАТЕЛЬНЫЕ =====
+function today() {
+    var t = new Date();
+    var m = String(t.getMonth() + 1);
+    var d = String(t.getDate());
+    if (m.length < 2) m = '0' + m;
+    if (d.length < 2) d = '0' + d;
+    return t.getFullYear() + '-' + m + '-' + d;
+}
+
+function fmtDate(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p[2] + '.' + p[1] + '.' + p[0];
+}
+
+function fmtDateFull(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    var months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    return p[2] + ' ' + months[parseInt(p[1])-1] + ' ' + p[0];
+}
+
+function genId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+// ===== ДАННЫЕ =====
+function loadData() {
+    if (!pw) return [];
+    var d = localStorage.getItem(DK);
+    if (!d) return [];
+    var t = dec(d, pw);
+    if (t === null) return [];
+    try { return JSON.parse(t); } catch (e) { return []; }
+}
+
+function saveData(arr) {
+    if (!pw) return;
+    localStorage.setItem(DK, enc(JSON.stringify(arr), pw));
+}
+
+// ===== ОЧИСТКА ТЕКСТА =====
+function getPlainText(html) {
+    var temp = document.createElement('div');
+    temp.innerHTML = html;
+    var text = temp.textContent || temp.innerText || '';
+    text = text.replace(/^\d+\.\s*/gm, '');
+    text = text.replace(/^[\s]*[•\-*]\s*/gm, '');
+    text = text.replace(/\s+/g, ' ').trim();
+    return text;
+}
+
+function getPreview(html) {
+    var plain = getPlainText(html);
+    if (!plain) return '📝 (пусто)';
+    if (plain.length <= 70) return plain;
+    return plain.substring(0, 70) + '...';
+}
+
+function hasContent(html) {
+    return getPlainText(html).length > 0;
+}
+
+function formatText(html) {
+    var text = html;
+    text = text.replace(/([а-яА-Яa-zA-Z])([А-ЯA-Z])/g, function(match, p1, p2) {
+        if (match.indexOf('<') !== -1) return match;
+        return p1 + ' ' + p2;
+    });
+    return text;
+}
+
+function addImg() {
+    var u = prompt('Введите ссылку на изображение:');
+    if (u && u.trim()) {
+        var url = u.trim();
+        document.getElementById('editor').focus();
+        document.execCommand('insertHTML', false, 
+            '<a href="' + url + '" target="_blank" style="display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe;transition:all 0.2s;touch-action:manipulation;">🖼 Открыть изображение</a>'
+        );
+    }
+}
+
+// ===== ОТРИСОВКА =====
+function render() {
+    var entries = loadData();
+    var list = document.getElementById('list');
+    if (!entries.length) {
+        list.innerHTML = '<div class="empty-state">📭 Нет записей</div>';
+        return;
+    }
+    
+    entries.sort(function(a, b) {
+        if (a.date < b.date) return 1;
+        if (a.date > b.date) return -1;
+        return 0;
+    });
+    
+    var groups = {};
+    for (var i = 0; i < entries.length; i++) {
+        var date = entries[i].date;
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(entries[i]);
+    }
+    
+    var html = '';
+    var dates = Object.keys(groups).sort(function(a, b) {
+        if (a < b) return 1;
+        if (a > b) return -1;
+        return 0;
+    });
+    
+    for (var g = 0; g < dates.length; g++) {
+        var date = dates[g];
+        var items = groups[date];
+        var dateDisplay = fmtDateFull(date);
+        var count = items.length;
+        
+        var word = 'записей';
+        if (count === 1) word = 'запись';
+        if (count >= 2 && count <= 4) word = 'записи';
+        
+        html += '<div class="date-group" data-date="' + date + '">';
+        html += '<div class="date-header" onclick="toggleGroup(this)">';
+        html += '<span class="date-label">📅 ' + dateDisplay + '</span>';
+        html += '<span style="display:flex;align-items:center;gap:10px;">';
+        html += '<span class="date-count">' + count + ' ' + word + '</span>';
+        html += '<span class="date-arrow">▼</span>';
+        html += '</span></div>';
+        html += '<div class="date-entries open">';
+        
+        for (var j = 0; j < items.length; j++) {
+            var x = items[j];
+            var preview = getPreview(x.html);
+            var hasList = x.html.indexOf('<ul') !== -1 || x.html.indexOf('<ol') !== -1;
+            var hasImg = x.html.indexOf('target="_blank"') !== -1;
+            var badges = '';
+            if (hasList) badges += ' <span class="badge">📋 список</span>';
+            if (hasImg) badges += ' <span class="badge">🔗 ссылка</span>';
+            
+            html += '<div class="card" data-id="' + x.id + '">';
+            html += '<div class="card-header">';
+            html += '<div><span class="card-name">' + esc(x.fullName) + '</span>';
+            if (x.nickname) html += ' <span class="card-nick">' + esc(x.nickname) + '</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="card-preview" onclick="toggleBody(this, \'' + x.id + '\')">' + esc(preview) + badges + '</div>';
+            html += '<div class="card-body" id="body-' + x.id + '">' + x.html + '</div>';
+            html += '<div class="card-actions">';
+            html += '<button class="edit-btn" onclick="edit(\'' + x.id + '\')">✏️ Редактировать</button>';
+            html += '<button class="del-btn" onclick="del(\'' + x.id + '\')">🗑 Удалить</button>';
+            html += '</div></div>';
+        }
+        
+        html += '</div></div>';
+    }
+    list.innerHTML = html;
+}
+
+function toggleGroup(el) {
+    var entries = el.nextElementSibling;
+    var arrow = el.querySelector('.date-arrow');
+    if (entries.classList.contains('open')) {
+        entries.classList.remove('open');
+        arrow.classList.remove('open');
+    } else {
+        entries.classList.add('open');
+        arrow.classList.add('open');
+    }
+}
+
+function toggleBody(el, id) {
+    var body = document.getElementById('body-' + id);
+    if (!body) return;
+    if (body.classList.contains('show')) {
+        body.classList.remove('show');
+        el.innerHTML = el.dataset.preview || '';
+    } else {
+        body.classList.add('show');
+        el.dataset.preview = el.textContent;
+        el.innerHTML = '▲ Скрыть';
+    }
+}
+
+// ===== ДЕЙСТВИЯ =====
+function del(id) {
+    if (!confirm('Удалить запись?')) return;
+    var entries = loadData();
+    var newEntries = [];
+    for (var i = 0; i < entries.length; i++) {
+        if (entries[i].id !== id) newEntries.push(entries[i]);
+    }
+    saveData(newEntries);
+    render();
+    if (editingId === id) cancelEdit();
+}
+
+function edit(id) {
+    var entries = loadData();
+    var entry = null;
+    for (var i = 0; i < entries.length; i++) {
+        if (entries[i].id === id) { entry = entries[i]; break; }
+    }
+    if (!entry) return;
+    
+    editingId = id;
+    document.getElementById('fio').value = entry.fullName;
+    document.getElementById('nick').value = entry.nickname || '';
+    document.getElementById('date').value = entry.date;
+    document.getElementById('editor').innerHTML = entry.html;
+    document.getElementById('editor').classList.add('edit-mode');
+    
+    document.getElementById('updateBtn').style.display = 'inline-block';
+    document.getElementById('cancelBtn').style.display = 'inline-block';
+    document.getElementById('editId').textContent = id;
+    document.querySelector('.btn-blue:not(#updateBtn)').style.display = 'none';
+    
+    document.getElementById('editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function update() {
+    var f = document.getElementById('fio').value.trim();
+    var n = document.getElementById('nick').value.trim();
+    var d = document.getElementById('date').value;
+    var h = document.getElementById('editor').innerHTML.trim();
+    var id = document.getElementById('editId').textContent;
+    
+    if (!f) { alert('Введите ФИО'); return; }
+    if (!d) { alert('Укажите дату'); return; }
+    if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
+    
+    var formattedHtml = formatText(h);
+    
+    var entries = loadData();
+    var idx = -1;
+    for (var i = 0; i < entries.length; i++) {
+        if (entries[i].id === id) { idx = i; break; }
+    }
+    if (idx === -1) return;
+    
+    entries[idx].fullName = f;
+    entries[idx].nickname = n;
+    entries[idx].date = d;
+    entries[idx].html = formattedHtml;
+    saveData(entries);
+    render();
+    cancelEdit();
+}
+
+function cancelEdit() {
+    editingId = null;
+    document.getElementById('editor').classList.remove('edit-mode');
+    document.getElementById('updateBtn').style.display = 'none';
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('editId').textContent = '';
+    var btn = document.querySelector('.btn-blue:not(#updateBtn)');
+    if (btn) btn.style.display = 'inline-block';
+    clearForm();
+}
+
+function add() {
+    var f = document.getElementById('fio').value.trim();
+    var n = document.getElementById('nick').value.trim();
+    var d = document.getElementById('date').value;
+    var h = document.getElementById('editor').innerHTML.trim();
+    
+    if (!f) { alert('Введите ФИО'); return; }
+    if (!d) { alert('Укажите дату'); return; }
+    if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
+    
+    var formattedHtml = formatText(h);
+    
+    var entries = loadData();
+    entries.push({
+        id: genId(),
+        fullName: f,
+        nickname: n,
+        date: d,
+        html: formattedHtml,
+        createdAt: new Date().toISOString()
+    });
+    saveData(entries);
+    render();
+    clearForm();
+}
+
+function clearForm() {
+    document.getElementById('fio').value = '';
+    document.getElementById('nick').value = '';
+    document.getElementById('date').value = today();
+    document.getElementById('editor').innerHTML = '';
+    if (editingId) cancelEdit();
+}
+
+function clearAll() {
+    if (!confirm('Удалить ВСЕ записи?')) return;
+    if (!confirm('Точно?')) return;
+    saveData([]);
+    render();
+}
+
+function clearEditorFormat() {
+    document.getElementById('editor').focus();
+    document.execCommand('removeFormat', false, null);
+}
+
+function exportData() {
+    var entries = loadData();
+    if (!entries.length) { alert('Нет записей'); return; }
+    entries.sort(function(a, b) {
+        if (a.date < b.date) return 1;
+        if (a.date > b.date) return -1;
+        return 0;
+    });
+    var text = 'ЖУРНАЛ ПЕРЕДАЧИ СМЕН\n' + '='.repeat(50) + '\n\n';
+    for (var i = 0; i < entries.length; i++) {
+        var x = entries[i];
+        text += fmtDate(x.date) + ' | ' + x.fullName + (x.nickname ? ' (' + x.nickname + ')' : '') + '\n';
+        text += '   ' + getPlainText(x.html) + '\n\n';
+    }
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'journal_' + today() + '.txt';
+    a.click();
+}
+
+function logout() {
+    if (confirm('Выйти?')) {
+        pw = null;
+        location.reload();
+    }
+}
+
+// ===== ФОРМАТИРОВАНИЕ =====
+var formatBtns = document.querySelectorAll('[data-cmd]');
+for (var i = 0; i < formatBtns.length; i++) {
+    (function(btn) {
+        btn.addEventListener('click', function() {
+            var cmd = this.dataset.cmd;
+            document.getElementById('editor').focus();
+            document.execCommand(cmd, false, null);
+            setTimeout(function() {
+                try {
+                    if (document.queryCommandState(cmd)) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                } catch(e) {}
+            }, 10);
+        });
+    })(formatBtns[i]);
+}
+
+// ===== АВТОРИЗАЦИЯ =====
+document.getElementById('date').value = today();
+
+var sp = localStorage.getItem(PK);
+
+if (sp) {
+    document.getElementById('authTitle').textContent = 'Введите пароль';
+    document.getElementById('authDesc').textContent = 'Данные зашифрованы';
+    document.getElementById('login').textContent = 'Войти';
+    document.getElementById('hint').textContent = 'Введите ваш пароль';
+    document.getElementById('reset').style.display = 'block';
+} else {
+    document.getElementById('authTitle').textContent = 'Создайте пароль';
+    document.getElementById('authDesc').textContent = 'Придумайте пароль для шифрования';
+    document.getElementById('login').textContent = 'Создать';
+    document.getElementById('hint').textContent = 'Минимум 4 символа';
+    document.getElementById('reset').style.display = 'none';
+}
+
+document.getElementById('login').onclick = function() {
+    var p = document.getElementById('pass').value.trim();
+    document.getElementById('err').textContent = '';
+    
+    if (p.length < 4) {
+        document.getElementById('err').textContent = 'Минимум 4 символа';
+        return;
+    }
+    
+    var sp = localStorage.getItem(PK);
+    
+    if (!sp) {
+        localStorage.setItem(PK, p);
+        localStorage.setItem(DK, enc('[]', p));
+        pw = p;
+        document.getElementById('pass').value = '';
+        enterApp();
+    } else {
+        var d = localStorage.getItem(DK);
+        if (!d) {
+            document.getElementById('err').textContent = 'Ошибка';
+            return;
+        }
+        var t = dec(d, p);
+        if (t !== null) {
+            pw = p;
+            document.getElementById('pass').value = '';
+            enterApp();
+        } else {
+            document.getElementById('err').textContent = 'Неверный пароль';
+            document.getElementById('pass').value = '';
+            document.getElementById('pass').focus();
+        }
+    }
+};
+
+document.getElementById('pass').onkeydown = function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('login').click();
+    }
+};
+
+document.getElementById('reset').onclick = function() {
+    if (confirm('Все данные будут удалены!') && confirm('Точно?')) {
+        localStorage.removeItem(PK);
+        localStorage.removeItem(DK);
+        location.reload();
+    }
+};
+
+function enterApp() {
+    document.getElementById('auth').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    render();
+}
+</script>
+</body>
+</html>
