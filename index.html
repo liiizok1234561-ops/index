@@ -324,10 +324,51 @@
       background:#1f2937;
     }
 
+
+    .entry-panel{
+      margin-bottom:18px;
+      padding:14px;
+      border:1px solid #dfe6ef;
+      border-radius:14px;
+      background:#fbfcfe;
+    }
+
+    .entry-panel-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .entry-panel-head h2{
+      margin:0;
+      font-size:17px;
+    }
+
+    .list-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    body[data-theme="dark"] .entry-panel{
+      background:#151e2e;
+      border-color:#334155;
+    }
+
+    body[data-theme="dark"] .entry-panel-head h2{
+      color:#f8fafc;
+    }
+
     @media(max-width:760px){
       .grid{grid-template-columns:1fr 1fr}
       .list-top{grid-template-columns:1fr}
-      .search-wrap{min-width:0}
+      .list-actions{justify-content:stretch}
+      .list-actions .btn{width:100%}
+      .search-wrap{min-width:0;width:100%}
     }
     @media(max-width:480px){
       .page{width:100%;margin:0;border-radius:0;min-height:100vh}
@@ -429,6 +470,12 @@
       <button class="btn btn-warning" onclick="migrateLegacyEntries()">🔐 Зашифровать старые записи</button>
     </div>
 
+    <div id="entryPanel" class="entry-panel hidden">
+      <div class="entry-panel-head">
+        <h2 id="entryPanelTitle">Новая запись</h2>
+        <button class="icon-btn" type="button" onclick="closeEntryPanel()" aria-label="Закрыть форму" title="Закрыть">✕</button>
+      </div>
+
     <div class="grid">
       <div class="field">
         <label>👤 ФИО</label>
@@ -475,8 +522,10 @@
     <div class="actions">
       <button id="createButton" class="btn btn-dark" onclick="createEntry()">➕ Добавить</button>
       <button id="updateButton" class="btn btn-primary hidden" onclick="updateEntry()">💾 Сохранить изменения</button>
-      <button id="cancelButton" class="btn btn-light hidden" onclick="cancelEdit()">❌ Отмена</button>
+      <button id="cancelButton" class="btn btn-light hidden" onclick="closeEntryPanel()">❌ Отмена</button>
       <button class="btn btn-light" onclick="clearForm()">🧹 Очистить форму</button>
+    </div>
+
     </div>
 
     <div class="list-top">
@@ -484,8 +533,11 @@
         <h2>📖 Записи</h2>
         <div id="syncStatus" class="status-line"></div>
       </div>
-      <div class="search-wrap">
-        <input id="search" class="search" placeholder="🔍 Поиск по ФИО, кличке или тексту">
+      <div class="list-actions">
+        <button class="btn btn-primary" type="button" onclick="openEntryPanel()">➕ Создать запись</button>
+        <div class="search-wrap">
+          <input id="search" class="search" placeholder="🔍 Поиск по ФИО, кличке или тексту">
+        </div>
       </div>
     </div>
 
@@ -944,6 +996,28 @@
     });
   }
 
+  function openEntryPanel() {
+    editingId = null;
+    clearForm(false);
+
+    document.getElementById('entryPanelTitle').textContent = 'Новая запись';
+    document.getElementById('createButton').classList.remove('hidden');
+    document.getElementById('updateButton').classList.add('hidden');
+    document.getElementById('cancelButton').classList.add('hidden');
+    document.getElementById('entryPanel').classList.remove('hidden');
+
+    document.getElementById('fullName').focus();
+    document.getElementById('entryPanel').scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+  function closeEntryPanel() {
+    cancelEdit();
+    document.getElementById('entryPanel').classList.add('hidden');
+  }
+
   function readForm() {
     const fullName = document.getElementById('fullName').value.trim();
     const nickname = document.getElementById('nickname').value.trim();
@@ -991,6 +1065,7 @@
 
       entries = await decodeEntries(rawEntries);
       clearForm();
+      document.getElementById('entryPanel').classList.add('hidden');
       updateLegacyNotice();
       render();
       setSyncStatus('✅ Запись зашифрована и сохранена');
@@ -1012,6 +1087,9 @@
 
     editingId = id;
 
+    document.getElementById('entryPanel').classList.remove('hidden');
+    document.getElementById('entryPanelTitle').textContent = 'Редактирование записи';
+
     document.getElementById('fullName').value = entry.fullName || '';
     document.getElementById('nickname').value = entry.nickname || '';
     document.getElementById('entryDate').value = entry.date || today();
@@ -1024,9 +1102,9 @@
     document.getElementById('updateButton').classList.remove('hidden');
     document.getElementById('cancelButton').classList.remove('hidden');
 
-    document.getElementById('editor').scrollIntoView({
+    document.getElementById('entryPanel').scrollIntoView({
       behavior: 'smooth',
-      block: 'center'
+      block: 'start'
     });
   }
 
@@ -1051,6 +1129,7 @@
       entries = await decodeEntries(rawEntries);
 
       cancelEdit();
+      document.getElementById('entryPanel').classList.add('hidden');
       updateLegacyNotice();
       render();
       setSyncStatus('✅ Запись зашифрована и обновлена');
