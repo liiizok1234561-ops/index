@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Журнал передачи смен</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
     <style>
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        body{font-family:-apple-system, BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f0f2f5;padding:12px;display:flex;justify-content:center;min-height:100vh;min-height:100dvh}
+        body{font-family:-apple-system, BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f0f2f5;padding:12px;display:flex;justify-content:center;min-height:100vh}
         .app{max-width:850px;width:100%;background:#fff;border-radius:20px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
         .app-header{display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px;align-items:center;border-bottom:2px solid #f1f5f9;padding-bottom:10px;gap:8px}
         .app-title{display:flex;align-items:center;gap:10px}
@@ -37,6 +36,8 @@
         .btn-red:hover{background:#fecaca}
         .btn-green{background:#dcfce7;color:#166534}
         .btn-green:hover{background:#bbf7d0}
+        .btn-yellow{background:#fef3c7;color:#92400e}
+        .btn-yellow:hover{background:#fde68a}
         .list{margin-top:15px}
         .date-group{border:1px solid #e2e8f0;border-radius:12px;margin-bottom:10px;overflow:hidden}
         .date-header{background:#f8fafc;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background 0.2s;user-select:none;min-height:50px;touch-action:manipulation}
@@ -77,11 +78,28 @@
         .empty-state{color:#94a3b8;text-align:center;padding:30px}
         .edit-mode{border-color:#3b82f6!important;box-shadow:0 0 0 3px rgba(59,130,246,0.2)}
         .badge{display:inline-block;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:4px}
+        .loading{display:flex;justify-content:center;align-items:center;padding:30px;gap:10px;color:#64748b}
+        .loading .spinner{width:20px;height:20px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
         @media (max-width:480px){body{padding:8px}.app{padding:12px;border-radius:16px}.app-title h1{font-size:16px}.inp{flex:1 1 100%;min-width:100%}.inp input{font-size:16px;padding:12px}.toolbar button{font-size:13px;padding:6px 10px;min-height:36px}.btn{padding:10px 16px;font-size:14px;min-height:40px}}
     </style>
 </head>
 <body>
-<div id="auth" class="auth-overlay">
+
+<!-- Экран загрузки -->
+<div id="loadingScreen" class="auth-overlay">
+    <div class="auth-box">
+        <div class="auth-icon">📋</div>
+        <h2>Журнал передачи смен</h2>
+        <div class="loading">
+            <div class="spinner"></div>
+            <span>Загрузка данных...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Окно авторизации -->
+<div id="auth" class="auth-overlay hidden">
     <div class="auth-box">
         <div class="auth-icon">📋</div>
         <h2 id="authTitle">Создайте пароль</h2>
@@ -93,25 +111,30 @@
         <div class="hint" id="hint">Минимум 4 символа</div>
     </div>
 </div>
+
+<!-- Основное приложение -->
 <div id="app" class="app hidden">
     <div class="app-header">
         <div class="app-title">
             <span class="icon">📋</span>
             <div>
                 <h1>Журнал передачи смен</h1>
-                <span class="subtitle">📌 Учёт и хранение записей</span>
+                <span class="subtitle">📌 Общие данные для всех (Google Таблица)</span>
             </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-green" onclick="clearAll()" style="font-size:12px;padding:6px 14px;min-height:36px;">🗑 Очистить всё</button>
-            <button class="btn btn-red" onclick="logout()" style="font-size:12px;padding:6px 14px;min-height:36px;">🚪 Выйти</button>
+            <button class="btn btn-yellow" onclick="syncData()" style="font-size:11px;padding:4px 12px;min-height:32px;">🔄 Синхронизировать</button>
+            <button class="btn btn-green" onclick="clearAll()" style="font-size:11px;padding:4px 12px;min-height:32px;">🗑 Очистить всё</button>
+            <button class="btn btn-red" onclick="logout()" style="font-size:11px;padding:4px 12px;min-height:32px;">🚪 Выйти</button>
         </div>
     </div>
+    
     <div class="row">
         <div class="inp"><label>👤 ФИО</label><input id="fio" placeholder="Иванов Иван" inputmode="text"></div>
         <div class="inp" style="flex:0.6;min-width:100px"><label>🐾 Кличка</label><input id="nick" placeholder="Fox" inputmode="text"></div>
         <div class="inp" style="flex:0.7;min-width:120px"><label>📅 Дата</label><input type="date" id="date"></div>
     </div>
+    
     <label style="font-size:12px;color:#666;font-weight:600;display:block;margin-bottom:4px;">📝 Описание</label>
     <div class="toolbar">
         <button type="button" data-cmd="bold"><b>B</b></button>
@@ -126,6 +149,7 @@
         <button type="button" onclick="clearEditorFormat()" style="color:#dc2626;">🧹 Очистить</button>
     </div>
     <div id="editor" contenteditable="true"></div>
+    
     <div style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap;">
         <button class="btn btn-blue" onclick="add()">➕ Добавить</button>
         <button class="btn btn-white" onclick="clearForm()">🧹 Очистить всё</button>
@@ -134,11 +158,31 @@
         <button class="btn btn-blue" id="updateBtn" style="display:none;background:#2563eb;" onclick="update()">💾 Обновить</button>
         <button class="btn btn-white" id="cancelBtn" style="display:none;" onclick="cancelEdit()">❌ Отмена</button>
     </div>
-    <h2 style="font-size:16px;margin-top:20px;color:#1e293b;">📖 Последние записи</h2>
+    
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;flex-wrap:wrap;gap:8px;">
+        <h2 style="font-size:16px;color:#1e293b;">📖 Последние записи</h2>
+        <span id="syncStatus" style="font-size:11px;color:#94a3b8;"></span>
+    </div>
     <div id="list" class="list"></div>
 </div>
+
 <script>
-var PK='jp',DK='jd',pw=null,editingId=null;
+// ===== НАСТРОЙКА GOOGLE TABLES (ВАШИ ДАННЫЕ) =====
+const GOOGLE_API_KEY = 'AIzaSyAoTFf55BTN8VteLoOZ2oHgEDL1snjHgOg';
+const SPREADSHEET_ID = '1GpP5N7uwajcxrH-Iq8_vPIvnG3AD4ecdedb5Uf79Wjw';
+const SHEET_NAME = 'Лист1';
+
+// URL ДЛЯ ЗАПРОСОВ
+const READ_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + '?key=' + GOOGLE_API_KEY;
+const WRITE_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + ':append?valueInputOption=USER_ENTERED&key=' + GOOGLE_API_KEY;
+const CLEAR_URL = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + SHEET_NAME + ':clear?key=' + GOOGLE_API_KEY;
+
+// ===== ПЕРЕМЕННЫЕ =====
+var PK = 'jp';
+var DK = 'jd';
+var pw = null;
+var editingId = null;
+var entries = [];
 
 // ===== ШИФРОВАНИЕ =====
 function utf8ToBase64(str) {
@@ -185,37 +229,504 @@ function dec(d, p) {
     }
 }
 
-// ===== ОСТАЛЬНЫЕ ФУНКЦИИ =====
+// ===== РАБОТА С GOOGLE TABLES =====
+function loadFromGoogle() {
+    document.getElementById('syncStatus').textContent = '⏳ Загрузка...';
+    
+    return fetch(READ_URL)
+        .then(function(res) {
+            if (!res.ok) throw new Error('Ошибка загрузки: ' + res.status);
+            return res.json();
+        })
+        .then(function(data) {
+            var rows = data.values || [];
+            if (rows.length < 2) {
+                entries = [];
+                document.getElementById('syncStatus').textContent = '✅ Таблица пуста';
+                render();
+                return entries;
+            }
+            
+            var result = [];
+            for (var i = 1; i < rows.length; i++) {
+                var row = rows[i];
+                result.push({
+                    id: row[0] || String(Date.now() + i),
+                    fullName: row[1] || '',
+                    nickname: row[2] || '',
+                    date: row[3] || '',
+                    html: row[4] || ''
+                });
+            }
+            entries = result;
+            document.getElementById('syncStatus').textContent = '✅ Загружено ' + entries.length + ' записей';
+            render();
+            return entries;
+        })
+        .catch(function(err) {
+            console.error('Ошибка загрузки:', err);
+            document.getElementById('syncStatus').textContent = '❌ Ошибка загрузки';
+            var local = loadData();
+            if (local.length) {
+                entries = local;
+                render();
+            }
+            return entries;
+        });
+}
+
+function saveToGoogle(entry) {
+    var row = [
+        entry.id || String(Date.now() + Math.random()),
+        entry.fullName,
+        entry.nickname || '',
+        entry.date || '',
+        entry.html || ''
+    ];
+    
+    return fetch(WRITE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [row] })
+    })
+    .then(function(res) {
+        if (!res.ok) throw new Error('Ошибка сохранения: ' + res.status);
+        return res.json();
+    });
+}
+
+function deleteFromGoogle(id) {
+    return fetch(READ_URL)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            var rows = data.values || [];
+            if (rows.length < 2) return [];
+            
+            var rowIndex = -1;
+            for (var i = 1; i < rows.length; i++) {
+                if (rows[i][0] === id) {
+                    rowIndex = i;
+                    break;
+                }
+            }
+            
+            if (rowIndex === -1) throw new Error('Запись не найдена');
+            
+            var range = SHEET_NAME + '!A' + (rowIndex + 1) + ':E' + (rowIndex + 1);
+            var deleteUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + range + ':clear?key=' + GOOGLE_API_KEY;
+            
+            return fetch(deleteUrl, { method: 'POST' })
+                .then(function(res) {
+                    if (!res.ok) throw new Error('Ошибка удаления');
+                    return { success: true };
+                });
+        });
+}
+
+function updateInGoogle(entry) {
+    return fetch(READ_URL)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            var rows = data.values || [];
+            if (rows.length < 2) throw new Error('Нет данных');
+            
+            var rowIndex = -1;
+            for (var i = 1; i < rows.length; i++) {
+                if (rows[i][0] === entry.id) {
+                    rowIndex = i;
+                    break;
+                }
+            }
+            
+            if (rowIndex === -1) throw new Error('Запись не найдена');
+            
+            var range = SHEET_NAME + '!A' + (rowIndex + 1) + ':E' + (rowIndex + 1);
+            var updateUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + SPREADSHEET_ID + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + GOOGLE_API_KEY;
+            
+            var rowData = [
+                entry.id,
+                entry.fullName,
+                entry.nickname || '',
+                entry.date || '',
+                entry.html || ''
+            ];
+            
+            return fetch(updateUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ values: [rowData] })
+            })
+            .then(function(res) {
+                if (!res.ok) throw new Error('Ошибка обновления');
+                return res.json();
+            });
+        });
+}
+
+function clearGoogleSheet() {
+    return fetch(CLEAR_URL, { method: 'POST' })
+        .then(function(res) {
+            if (!res.ok) throw new Error('Ошибка очистки');
+            return res.json();
+        });
+}
+
+// ===== ЛОКАЛЬНОЕ ХРАНЕНИЕ =====
+function loadData() {
+    if (!pw) return [];
+    var d = localStorage.getItem(DK);
+    if (!d) return [];
+    var t = dec(d, pw);
+    if (t === null) return [];
+    try { return JSON.parse(t); } catch (e) { return []; }
+}
+
+function saveData(arr) {
+    if (!pw) return;
+    localStorage.setItem(DK, enc(JSON.stringify(arr), pw));
+}
+
+// ===== ОСНОВНЫЕ ФУНКЦИИ =====
 function today(){var t=new Date();var m=String(t.getMonth()+1);var d=String(t.getDate());if(m.length<2)m='0'+m;if(d.length<2)d='0'+d;return t.getFullYear()+'-'+m+'-'+d;}
 function fmtDate(d){if(!d)return '';var p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
 function fmtDateFull(d){if(!d)return '';var p=d.split('-');var months=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return p[2]+' '+months[parseInt(p[1])-1]+' '+p[0];}
 function genId(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-function loadData(){if(!pw)return[];var d=localStorage.getItem(DK);if(!d)return[];var t=dec(d,pw);if(t===null)return[];try{return JSON.parse(t);}catch(e){return[];}}
-function saveData(arr){if(!pw)return;localStorage.setItem(DK,enc(JSON.stringify(arr),pw));}
 function getPlainText(html){var temp=document.createElement('div');temp.innerHTML=html;var text=temp.textContent||temp.innerText||'';text=text.replace(/^\d+\.\s*/gm,'');text=text.replace(/^[\s]*[•\-*]\s*/gm,'');text=text.replace(/\s+/g,' ').trim();return text;}
 function getPreview(html){var plain=getPlainText(html);if(!plain)return '📝 (пусто)';if(plain.length<=70)return plain;return plain.substring(0,70)+'...';}
 function hasContent(html){return getPlainText(html).length>0;}
 function formatText(html){var text=html;text=text.replace(/([а-яА-Яa-zA-Z])([А-ЯA-Z])/g,function(match,p1,p2){if(match.indexOf('<')!==-1)return match;return p1+' '+p2;});return text;}
 function insertList(type){var editor=document.getElementById('editor');editor.focus();var sel=window.getSelection();var range=sel.getRangeAt(0);var text=type+' ';document.execCommand('insertText',false,text);}
 function addImg(){var u=prompt('Введите ссылку на изображение:');if(u&&u.trim()){var url=u.trim();document.getElementById('editor').focus();document.execCommand('insertHTML',false,'<a href="'+url+'" target="_blank" style="display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe;touch-action:manipulation;">🖼 Открыть изображение</a>');}}
-function render(){var entries=loadData();var list=document.getElementById('list');if(!entries.length){list.innerHTML='<div class="empty-state">📭 Нет записей</div>';return;}entries.sort(function(a,b){if(a.date<b.date)return 1;if(a.date>b.date)return -1;return 0;});var groups={};for(var i=0;i<entries.length;i++){var date=entries[i].date;if(!groups[date])groups[date]=[];groups[date].push(entries[i]);}var html='';var dates=Object.keys(groups).sort(function(a,b){if(a<b)return 1;if(a>b)return -1;return 0;});for(var g=0;g<dates.length;g++){var date=dates[g];var items=groups[date];var dateDisplay=fmtDateFull(date);var count=items.length;var word='записей';if(count===1)word='запись';if(count>=2&&count<=4)word='записи';html+='<div class="date-group" data-date="'+date+'">';html+='<div class="date-header" onclick="toggleGroup(this)">';html+='<span class="date-label">📅 '+dateDisplay+'</span>';html+='<span style="display:flex;align-items:center;gap:10px;">';html+='<span class="date-count">'+count+' '+word+'</span>';html+='<span class="date-arrow">▼</span>';html+='</span></div>';html+='<div class="date-entries open">';for(var j=0;j<items.length;j++){var x=items[j];var preview=getPreview(x.html);var hasList=x.html.indexOf('•')!==-1||x.html.indexOf('1.')!==-1;var hasImg=x.html.indexOf('target="_blank"')!==-1;var badges='';if(hasList)badges+=' <span class="badge">📋 список</span>';if(hasImg)badges+=' <span class="badge">🔗 ссылка</span>';html+='<div class="card" data-id="'+x.id+'">';html+='<div class="card-header">';html+='<div><span class="card-name">'+esc(x.fullName)+'</span>';if(x.nickname)html+=' <span class="card-nick">'+esc(x.nickname)+'</span>';html+='</div>';html+='</div>';html+='<div class="card-preview" onclick="toggleBody(this, \''+x.id+'\')">'+esc(preview)+badges+'</div>';html+='<div class="card-body" id="body-'+x.id+'">'+x.html+'</div>';html+='<div class="card-actions">';html+='<button class="edit-btn" onclick="edit(\''+x.id+'\')">✏️ Редактировать</button>';html+='<button class="del-btn" onclick="del(\''+x.id+'\')">🗑 Удалить</button>';html+='</div></div>';}html+='</div></div>';}list.innerHTML=html;}
-function toggleGroup(el){var entries=el.nextElementSibling;var arrow=el.querySelector('.date-arrow');if(entries.classList.contains('open')){entries.classList.remove('open');arrow.classList.remove('open');}else{entries.classList.add('open');arrow.classList.add('open');}}
-function toggleBody(el,id){var body=document.getElementById('body-'+id);if(!body)return;if(body.classList.contains('show')){body.classList.remove('show');el.innerHTML=el.dataset.preview||'';}else{body.classList.add('show');el.dataset.preview=el.textContent;el.innerHTML='▲ Скрыть';}}
-function del(id){if(!confirm('Удалить запись?'))return;var entries=loadData();var newEntries=[];for(var i=0;i<entries.length;i++){if(entries[i].id!==id)newEntries.push(entries[i]);}saveData(newEntries);render();if(editingId===id)cancelEdit();}
-function edit(id){var entries=loadData();var entry=null;for(var i=0;i<entries.length;i++){if(entries[i].id===id){entry=entries[i];break;}}if(!entry)return;editingId=id;document.getElementById('fio').value=entry.fullName;document.getElementById('nick').value=entry.nickname||'';document.getElementById('date').value=entry.date;document.getElementById('editor').innerHTML=entry.html;document.getElementById('editor').classList.add('edit-mode');document.getElementById('updateBtn').style.display='inline-block';document.getElementById('cancelBtn').style.display='inline-block';document.getElementById('editId').textContent=id;document.querySelector('.btn-blue:not(#updateBtn)').style.display='none';document.getElementById('editor').scrollIntoView({behavior:'smooth',block:'center'});}
-function update(){var f=document.getElementById('fio').value.trim();var n=document.getElementById('nick').value.trim();var d=document.getElementById('date').value;var h=document.getElementById('editor').innerHTML.trim();var id=document.getElementById('editId').textContent;if(!f){alert('Введите ФИО');return;}if(!d){alert('Укажите дату');return;}if(!h||!hasContent(h)){alert('Добавьте описание');return;}var formattedHtml=formatText(h);var entries=loadData();var idx=-1;for(var i=0;i<entries.length;i++){if(entries[i].id===id){idx=i;break;}}if(idx===-1)return;entries[idx].fullName=f;entries[idx].nickname=n;entries[idx].date=d;entries[idx].html=formattedHtml;saveData(entries);render();cancelEdit();}
-function cancelEdit(){editingId=null;document.getElementById('editor').classList.remove('edit-mode');document.getElementById('updateBtn').style.display='none';document.getElementById('cancelBtn').style.display='none';document.getElementById('editId').textContent='';var btn=document.querySelector('.btn-blue:not(#updateBtn)');if(btn)btn.style.display='inline-block';clearForm();}
-function add(){var f=document.getElementById('fio').value.trim();var n=document.getElementById('nick').value.trim();var d=document.getElementById('date').value;var h=document.getElementById('editor').innerHTML.trim();if(!f){alert('Введите ФИО');return;}if(!d){alert('Укажите дату');return;}if(!h||!hasContent(h)){alert('Добавьте описание');return;}var formattedHtml=formatText(h);var entries=loadData();entries.push({id:genId(),fullName:f,nickname:n,date:d,html:formattedHtml,createdAt:new Date().toISOString()});saveData(entries);render();clearForm();}
-function clearForm(){document.getElementById('fio').value='';document.getElementById('nick').value='';document.getElementById('date').value=today();document.getElementById('editor').innerHTML='';if(editingId)cancelEdit();}
-function clearAll(){if(!confirm('Удалить ВСЕ записи?'))return;if(!confirm('Точно?'))return;saveData([]);render();}
-function clearEditorFormat(){document.getElementById('editor').focus();document.execCommand('removeFormat',false,null);}
-function exportData(){var entries=loadData();if(!entries.length){alert('Нет записей');return;}entries.sort(function(a,b){if(a.date<b.date)return 1;if(a.date>b.date)return -1;return 0;});var text='ЖУРНАЛ ПЕРЕДАЧИ СМЕН\n'+'='.repeat(50)+'\n\n';for(var i=0;i<entries.length;i++){var x=entries[i];text+=fmtDate(x.date)+' | '+x.fullName+(x.nickname?' ('+x.nickname+')':'')+'\n';text+='   '+getPlainText(x.html)+'\n\n';}var blob=new Blob([text],{type:'text/plain;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='journal_'+today()+'.txt';a.click();}
-function logout(){if(confirm('Выйти?')){pw=null;location.reload();}}
-var formatBtns=document.querySelectorAll('[data-cmd]');for(var i=0;i<formatBtns.length;i++){(function(btn){btn.addEventListener('click',function(){var cmd=this.dataset.cmd;document.getElementById('editor').focus();document.execCommand(cmd,false,null);setTimeout(function(){try{if(document.queryCommandState(cmd)){btn.classList.add('active');}else{btn.classList.remove('active');}}catch(e){}},10);});})(formatBtns[i]);}
-document.getElementById('date').value=today();var sp=localStorage.getItem(PK);if(sp){document.getElementById('authTitle').textContent='Введите пароль';document.getElementById('authDesc').textContent='Данные зашифрованы';document.getElementById('login').textContent='Войти';document.getElementById('hint').textContent='Введите ваш пароль';document.getElementById('reset').style.display='block';}else{document.getElementById('authTitle').textContent='Создайте пароль';document.getElementById('authDesc').textContent='Придумайте пароль для шифрования';document.getElementById('login').textContent='Создать';document.getElementById('hint').textContent='Минимум 4 символа';document.getElementById('reset').style.display='none';}
 
-// 🔥 ИСПРАВЛЕННАЯ АВТОРИЗАЦИЯ
+function render() {
+    var list = document.getElementById('list');
+    if (!entries.length) {
+        list.innerHTML = '<div class="empty-state">📭 Нет записей</div>';
+        return;
+    }
+    
+    var sorted = entries.slice().sort(function(a, b) {
+        if (a.date < b.date) return 1;
+        if (a.date > b.date) return -1;
+        return 0;
+    });
+    
+    var groups = {};
+    for (var i = 0; i < sorted.length; i++) {
+        var date = sorted[i].date;
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(sorted[i]);
+    }
+    
+    var html = '';
+    var dates = Object.keys(groups).sort(function(a, b) {
+        if (a < b) return 1;
+        if (a > b) return -1;
+        return 0;
+    });
+    
+    for (var g = 0; g < dates.length; g++) {
+        var date = dates[g];
+        var items = groups[date];
+        var dateDisplay = fmtDateFull(date);
+        var count = items.length;
+        var word = 'записей';
+        if (count === 1) word = 'запись';
+        if (count >= 2 && count <= 4) word = 'записи';
+        
+        html += '<div class="date-group" data-date="' + date + '">';
+        html += '<div class="date-header" onclick="toggleGroup(this)">';
+        html += '<span class="date-label">📅 ' + dateDisplay + '</span>';
+        html += '<span style="display:flex;align-items:center;gap:10px;">';
+        html += '<span class="date-count">' + count + ' ' + word + '</span>';
+        html += '<span class="date-arrow">▼</span>';
+        html += '</span></div>';
+        html += '<div class="date-entries open">';
+        
+        for (var j = 0; j < items.length; j++) {
+            var x = items[j];
+            var preview = getPreview(x.html);
+            var hasList = x.html.indexOf('•') !== -1 || x.html.indexOf('1.') !== -1;
+            var hasImg = x.html.indexOf('target="_blank"') !== -1;
+            var badges = '';
+            if (hasList) badges += ' <span class="badge">📋 список</span>';
+            if (hasImg) badges += ' <span class="badge">🔗 ссылка</span>';
+            
+            html += '<div class="card" data-id="' + x.id + '">';
+            html += '<div class="card-header">';
+            html += '<div><span class="card-name">' + esc(x.fullName) + '</span>';
+            if (x.nickname) html += ' <span class="card-nick">' + esc(x.nickname) + '</span>';
+            html += '</div>';
+            html += '</div>';
+            html += '<div class="card-preview" onclick="toggleBody(this, \'' + x.id + '\')">' + esc(preview) + badges + '</div>';
+            html += '<div class="card-body" id="body-' + x.id + '">' + x.html + '</div>';
+            html += '<div class="card-actions">';
+            html += '<button class="edit-btn" onclick="edit(\'' + x.id + '\')">✏️ Редактировать</button>';
+            html += '<button class="del-btn" onclick="del(\'' + x.id + '\')">🗑 Удалить</button>';
+            html += '</div></div>';
+        }
+        
+        html += '</div></div>';
+    }
+    list.innerHTML = html;
+}
+
+function toggleGroup(el) {
+    var entries = el.nextElementSibling;
+    var arrow = el.querySelector('.date-arrow');
+    if (entries.classList.contains('open')) {
+        entries.classList.remove('open');
+        arrow.classList.remove('open');
+    } else {
+        entries.classList.add('open');
+        arrow.classList.add('open');
+    }
+}
+
+function toggleBody(el, id) {
+    var body = document.getElementById('body-' + id);
+    if (!body) return;
+    if (body.classList.contains('show')) {
+        body.classList.remove('show');
+        el.innerHTML = el.dataset.preview || '';
+    } else {
+        body.classList.add('show');
+        el.dataset.preview = el.textContent;
+        el.innerHTML = '▲ Скрыть';
+    }
+}
+
+// ===== ДЕЙСТВИЯ С ЗАПИСЯМИ =====
+function del(id) {
+    if (!confirm('🗑 Удалить запись?')) return;
+    
+    deleteFromGoogle(id)
+        .then(function() {
+            entries = entries.filter(function(x) { return x.id !== id; });
+            render();
+            document.getElementById('syncStatus').textContent = '✅ Запись удалена';
+            saveData(entries);
+        })
+        .catch(function(err) {
+            alert('❌ Ошибка удаления: ' + err.message);
+        });
+}
+
+function edit(id) {
+    var entry = null;
+    for (var i = 0; i < entries.length; i++) {
+        if (entries[i].id === id) { entry = entries[i]; break; }
+    }
+    if (!entry) return;
+    
+    editingId = id;
+    document.getElementById('fio').value = entry.fullName;
+    document.getElementById('nick').value = entry.nickname || '';
+    document.getElementById('date').value = entry.date;
+    document.getElementById('editor').innerHTML = entry.html;
+    document.getElementById('editor').classList.add('edit-mode');
+    
+    document.getElementById('updateBtn').style.display = 'inline-block';
+    document.getElementById('cancelBtn').style.display = 'inline-block';
+    document.getElementById('editId').textContent = id;
+    document.querySelector('.btn-blue:not(#updateBtn)').style.display = 'none';
+    
+    document.getElementById('editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function update() {
+    var f = document.getElementById('fio').value.trim();
+    var n = document.getElementById('nick').value.trim();
+    var d = document.getElementById('date').value;
+    var h = document.getElementById('editor').innerHTML.trim();
+    var id = document.getElementById('editId').textContent;
+    
+    if (!f) { alert('Введите ФИО'); return; }
+    if (!d) { alert('Укажите дату'); return; }
+    if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
+    
+    var formattedHtml = formatText(h);
+    
+    var entry = {
+        id: id,
+        fullName: f,
+        nickname: n,
+        date: d,
+        html: formattedHtml
+    };
+    
+    updateInGoogle(entry)
+        .then(function() {
+            for (var i = 0; i < entries.length; i++) {
+                if (entries[i].id === id) {
+                    entries[i] = entry;
+                    break;
+                }
+            }
+            render();
+            cancelEdit();
+            document.getElementById('syncStatus').textContent = '✅ Запись обновлена';
+            saveData(entries);
+        })
+        .catch(function(err) {
+            alert('❌ Ошибка обновления: ' + err.message);
+        });
+}
+
+function cancelEdit() {
+    editingId = null;
+    document.getElementById('editor').classList.remove('edit-mode');
+    document.getElementById('updateBtn').style.display = 'none';
+    document.getElementById('cancelBtn').style.display = 'none';
+    document.getElementById('editId').textContent = '';
+    var btn = document.querySelector('.btn-blue:not(#updateBtn)');
+    if (btn) btn.style.display = 'inline-block';
+    clearForm();
+}
+
+function add() {
+    var f = document.getElementById('fio').value.trim();
+    var n = document.getElementById('nick').value.trim();
+    var d = document.getElementById('date').value;
+    var h = document.getElementById('editor').innerHTML.trim();
+    
+    if (!f) { alert('Введите ФИО'); return; }
+    if (!d) { alert('Укажите дату'); return; }
+    if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
+    
+    var formattedHtml = formatText(h);
+    var newEntry = {
+        id: genId(),
+        fullName: f,
+        nickname: n,
+        date: d,
+        html: formattedHtml
+    };
+    
+    document.getElementById('syncStatus').textContent = '⏳ Сохранение...';
+    
+    saveToGoogle(newEntry)
+        .then(function() {
+            entries.unshift(newEntry);
+            render();
+            clearForm();
+            document.getElementById('syncStatus').textContent = '✅ Запись сохранена';
+            saveData(entries);
+        })
+        .catch(function(err) {
+            alert('❌ Ошибка сохранения: ' + err.message);
+            document.getElementById('syncStatus').textContent = '❌ Ошибка сохранения';
+        });
+}
+
+function clearForm() {
+    document.getElementById('fio').value = '';
+    document.getElementById('nick').value = '';
+    document.getElementById('date').value = today();
+    document.getElementById('editor').innerHTML = '';
+    if (editingId) cancelEdit();
+}
+
+function clearAll() {
+    if (!confirm('⚠️ Удалить ВСЕ записи?')) return;
+    if (!confirm('Точно?')) return;
+    
+    clearGoogleSheet()
+        .then(function() {
+            entries = [];
+            render();
+            saveData(entries);
+            document.getElementById('syncStatus').textContent = '✅ Все записи удалены';
+        })
+        .catch(function(err) {
+            alert('❌ Ошибка очистки: ' + err.message);
+        });
+}
+
+function clearEditorFormat() {
+    document.getElementById('editor').focus();
+    document.execCommand('removeFormat', false, null);
+}
+
+function syncData() {
+    loadFromGoogle()
+        .then(function() {
+            render();
+            saveData(entries);
+        })
+        .catch(function(err) {
+            alert('❌ Ошибка синхронизации: ' + err.message);
+        });
+}
+
+function exportData() {
+    if (!entries.length) { alert('Нет записей'); return; }
+    var sorted = entries.slice().sort(function(a, b) {
+        if (a.date < b.date) return 1;
+        if (a.date > b.date) return -1;
+        return 0;
+    });
+    var text = 'ЖУРНАЛ ПЕРЕДАЧИ СМЕН\n' + '='.repeat(50) + '\n\n';
+    for (var i = 0; i < sorted.length; i++) {
+        var x = sorted[i];
+        text += fmtDate(x.date) + ' | ' + x.fullName + (x.nickname ? ' (' + x.nickname + ')' : '') + '\n';
+        text += '   ' + getPlainText(x.html) + '\n\n';
+    }
+    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'journal_' + today() + '.txt';
+    a.click();
+}
+
+function logout() {
+    if (confirm('Выйти?')) {
+        pw = null;
+        location.reload();
+    }
+}
+
+// ===== ФОРМАТИРОВАНИЕ =====
+var formatBtns = document.querySelectorAll('[data-cmd]');
+for (var i = 0; i < formatBtns.length; i++) {
+    (function(btn) {
+        btn.addEventListener('click', function() {
+            var cmd = this.dataset.cmd;
+            document.getElementById('editor').focus();
+            document.execCommand(cmd, false, null);
+            setTimeout(function() {
+                try {
+                    if (document.queryCommandState(cmd)) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                } catch(e) {}
+            }, 10);
+        });
+    })(formatBtns[i]);
+}
+
+// ===== АВТОРИЗАЦИЯ =====
+document.getElementById('date').value = today();
+
+var sp = localStorage.getItem(PK);
+
+if (sp) {
+    document.getElementById('authTitle').textContent = 'Введите пароль';
+    document.getElementById('authDesc').textContent = 'Данные зашифрованы';
+    document.getElementById('login').textContent = 'Войти';
+    document.getElementById('hint').textContent = 'Введите ваш пароль';
+    document.getElementById('reset').style.display = 'block';
+} else {
+    document.getElementById('authTitle').textContent = 'Создайте пароль';
+    document.getElementById('authDesc').textContent = 'Придумайте пароль для шифрования';
+    document.getElementById('login').textContent = 'Создать';
+    document.getElementById('hint').textContent = 'Минимум 4 символа';
+    document.getElementById('reset').style.display = 'none';
+}
+
 document.getElementById('login').onclick = function() {
     var p = document.getElementById('pass').value.trim();
     var err = document.getElementById('err');
@@ -229,7 +740,6 @@ document.getElementById('login').onclick = function() {
     var hasPassword = localStorage.getItem(PK);
     
     if (!hasPassword) {
-        // Первый запуск — создаём пароль
         localStorage.setItem(PK, p);
         localStorage.setItem(DK, enc('[]', p));
         pw = p;
@@ -238,7 +748,6 @@ document.getElementById('login').onclick = function() {
         return;
     }
     
-    // Проверяем пароль
     var stored = localStorage.getItem(DK);
     if (!stored) {
         err.textContent = '❌ Ошибка данных';
@@ -247,7 +756,6 @@ document.getElementById('login').onclick = function() {
     
     var decrypted = dec(stored, p);
     
-    // Если decrypted === null — пароль не подходит
     if (decrypted === null) {
         err.textContent = '❌ Неверный пароль';
         document.getElementById('pass').value = '';
@@ -255,10 +763,8 @@ document.getElementById('login').onclick = function() {
         return;
     }
     
-    // Проверяем, что это валидный JSON
     try {
         JSON.parse(decrypted);
-        // Пароль верный!
         pw = p;
         document.getElementById('pass').value = '';
         enterApp();
@@ -286,7 +792,29 @@ document.getElementById('reset').onclick = function() {
 function enterApp() {
     document.getElementById('auth').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
-    render();
+    document.getElementById('loadingScreen').classList.add('hidden');
+    
+    loadFromGoogle()
+        .then(function() {
+            saveData(entries);
+        })
+        .catch(function() {
+            var local = loadData();
+            if (local.length) {
+                entries = local;
+                render();
+            }
+        });
+}
+
+document.getElementById('loadingScreen').classList.remove('hidden');
+
+if (localStorage.getItem(PK)) {
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('auth').classList.remove('hidden');
+} else {
+    document.getElementById('loadingScreen').classList.add('hidden');
+    document.getElementById('auth').classList.remove('hidden');
 }
 </script>
 </body>
