@@ -101,6 +101,157 @@
     .notice{border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
     .offline{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}
     .legacy-notice{background:#fff7ed;color:#9a3412;border:1px solid #fdba74;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+
+    body,.page,.header,.content,.card,.date-group,.date-head,.date-items,.toolbar,
+    .field input,.field select,.search,#editor,.body,.modal,.filter,.btn{
+      transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease;
+    }
+
+    .theme-select{
+      border:1px solid #dce3ec;
+      border-radius:12px;
+      padding:9px 12px;
+      min-height:42px;
+      background:#f3f6fa;
+      color:#27364a;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    body[data-theme="dark"]{
+      background:#0f172a;
+      color:#e5e7eb;
+    }
+
+    body[data-theme="dark"] .page{
+      background:#111827;
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
+    }
+
+    body[data-theme="dark"] .header{
+      border-bottom-color:#263244;
+    }
+
+    body[data-theme="dark"] .brand h1,
+    body[data-theme="dark"] .list-title h2,
+    body[data-theme="dark"] .date-label,
+    body[data-theme="dark"] .person{
+      color:#f8fafc;
+    }
+
+    body[data-theme="dark"] .brand small,
+    body[data-theme="dark"] .status-line,
+    body[data-theme="dark"] .date-meta{
+      color:#94a3b8;
+    }
+
+    body[data-theme="dark"] .field label,
+    body[data-theme="dark"] .pin-row{
+      color:#cbd5e1;
+    }
+
+    body[data-theme="dark"] .field input,
+    body[data-theme="dark"] .field select,
+    body[data-theme="dark"] .search,
+    body[data-theme="dark"] #editor,
+    body[data-theme="dark"] .theme-select{
+      background:#1f2937;
+      color:#f8fafc;
+      border-color:#374151;
+    }
+
+    body[data-theme="dark"] .field input::placeholder,
+    body[data-theme="dark"] .search::placeholder{
+      color:#94a3b8;
+    }
+
+    body[data-theme="dark"] .toolbar{
+      background:#182235;
+    }
+
+    body[data-theme="dark"] .toolbar button,
+    body[data-theme="dark"] .filter,
+    body[data-theme="dark"] .btn-light{
+      background:#1f2937;
+      color:#e5e7eb;
+      border-color:#374151;
+    }
+
+    body[data-theme="dark"] .toolbar button:hover,
+    body[data-theme="dark"] .filter:hover,
+    body[data-theme="dark"] .btn-light:hover{
+      background:#273449;
+    }
+
+    body[data-theme="dark"] .date-group,
+    body[data-theme="dark"] .card{
+      border-color:#334155;
+    }
+
+    body[data-theme="dark"] .date-head{
+      background:#182235;
+    }
+
+    body[data-theme="dark"] .date-head:hover{
+      background:#1f2b3d;
+    }
+
+    body[data-theme="dark"] .date-items,
+    body[data-theme="dark"] .card{
+      background:#111827;
+    }
+
+    body[data-theme="dark"] .card.pinned{
+      background:#2a2414;
+      border-color:#a16207;
+    }
+
+    body[data-theme="dark"] .card.legacy{
+      background:#2b1d16;
+      border-color:#c2410c;
+    }
+
+    body[data-theme="dark"] .preview{
+      color:#e2e8f0;
+    }
+
+    body[data-theme="dark"] .preview:hover{
+      background:#1f2937;
+    }
+
+    body[data-theme="dark"] .body{
+      background:#1f2937;
+      color:#f1f5f9;
+    }
+
+    body[data-theme="dark"] .card-actions{
+      border-top-color:#334155;
+    }
+
+    body[data-theme="dark"] .empty{
+      color:#94a3b8;
+    }
+
+    body[data-theme="dark"] .filter.active{
+      background:#f8fafc;
+      color:#111827;
+      border-color:#f8fafc;
+    }
+
+    body[data-theme="dark"] .modal{
+      background:#111827;
+      color:#f8fafc;
+    }
+
+    body[data-theme="dark"] .modal p,
+    body[data-theme="dark"] .security-note{
+      color:#cbd5e1;
+    }
+
+    body[data-theme="dark"] .security-note{
+      background:#1f2937;
+    }
+
     @media(max-width:760px){
       .grid{grid-template-columns:1fr 1fr}
       .list-top{grid-template-columns:1fr}
@@ -170,6 +321,11 @@
       </div>
     </div>
     <div class="header-actions">
+      <select id="themeSelect" class="theme-select" aria-label="Тема приложения">
+        <option value="system">💻 Системная</option>
+        <option value="light">☀️ Светлая</option>
+        <option value="dark">🌙 Тёмная</option>
+      </select>
       <button class="btn btn-warning" onclick="manualSync()">🔄 Синхронизировать</button>
       <button class="btn btn-success" onclick="exportData()">📤 Экспорт</button>
       <button class="btn btn-purple" onclick="lockApp()">🔒 Заблокировать</button>
@@ -1380,7 +1536,50 @@
   });
 
 
+  const THEME_STORAGE_KEY = 'shiftJournalTheme';
+
+  function getSystemTheme() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
+  }
+
+  function applyTheme(mode) {
+    const resolved = mode === 'system'
+      ? getSystemTheme()
+      : mode;
+
+    document.body.dataset.theme = resolved;
+
+    const select = document.getElementById('themeSelect');
+    if (select) {
+      select.value = mode;
+    }
+  }
+
+  function setTheme(mode) {
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
+    applyTheme(mode);
+  }
+
+  const systemThemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+
+  systemThemeMedia.addEventListener('change', () => {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) || 'system';
+
+    if (saved === 'system') {
+      applyTheme('system');
+    }
+  });
+
   function init() {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'system';
+    applyTheme(savedTheme);
+
+    document.getElementById('themeSelect').addEventListener('change', event => {
+      setTheme(event.target.value);
+    });
+
     if (!window.crypto || !window.crypto.subtle) {
       document.getElementById('loading').innerHTML = `
         <div class="modal">
