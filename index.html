@@ -170,7 +170,7 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn btn-warning" onclick="loadEntries(true)">🔄 Обновить</button>
+      <button class="btn btn-warning" onclick="manualSync()">🔄 Синхронизировать</button>
       <button class="btn btn-success" onclick="exportData()">📤 Экспорт</button>
       <button class="btn btn-purple" onclick="lockApp()">🔒 Заблокировать</button>
       <button class="btn btn-danger" onclick="clearAll()">🗑 Очистить</button>
@@ -476,18 +476,27 @@
     return template.innerHTML;
   }
 
-  async function apiPost(action, extra) {
-    if (!accessKey) {
-      throw new Error('Введите пароль');
-    }
+  async function fetchWithTimeout(url, options, timeoutMs = 25000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-    const response = await fetch(APPSCRIPT_URL, {
+    try {
+      return await fetch(url, Object.assign({}, options, { signal: controller.signal }));
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Сервер не ответил за 25 секунд');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async function apiPostWithKey(action, key, extra) {
+    const response = await fetchWithTimeout(APPSCRIPT_URL, {
       method: 'POST',
       redirect: 'follow',
-      body: JSON.stringify(Object.assign({
-        action,
-        key: accessKey
-      }, extra || {}))
+      body: JSON.stringify(Object.assign({ action, key }, extra || {}))
     });
 
     if (!response.ok) {
@@ -501,6 +510,14 @@
     }
 
     return data;
+  }
+
+  async function apiPost(action, extra) {
+    if (!accessKey) {
+      throw new Error('Введите пароль');
+    }
+
+    return apiPostWithKey(action, accessKey, extra);
   }
 
   async function decodeEntries(serverEntries) {
@@ -593,7 +610,12 @@
         entries = [];
       }
 
-      document.getElementById('offlineNotice').classList.remove('hidden');
+      const notice = document.getElementById('offlineNotice');
+      notice.textContent = navigator.onLine
+        ? `Ошибка синхронизации: ${error.message}. Показана последняя копия, сохранённая на этом устройстве.`
+        : 'Нет подключения к интернету. Показана последняя копия, сохранённая на этом устройстве.';
+      notice.classList.remove('hidden');
+
       updateLegacyNotice();
       setSyncStatus(`❌ ${error.message}`);
       render();
@@ -604,6 +626,11 @@
   function updateLegacyNotice() {
     const hasLegacy = entries.some(entry => !entry.encrypted);
     document.getElementById('legacyNotice').classList.toggle('hidden', !hasLegacy);
+  }
+
+  async function manualSync() {
+    setSyncStatus('⏳ Синхронизация...');
+    await loadEntries(true);
   }
 
   function setSyncStatus(text) {
@@ -746,17 +773,21 @@
   async function deleteEntry(id) {
     if (!confirm('Удалить эту запись?')) return;
 
+    const cleanId = String(id);
+
     try {
       setSyncStatus('⏳ Удаляем запись...');
-      await apiPost('delete', { id });
+      await apiPost('delete', { id: cleanId });
 
-      rawEntries = rawEntries.filter(item => item.id !== id);
-      entries = entries.filter(item => item.id !== id);
+      rawEntries = rawEntries.filter(item => String(item.id) !== cleanId);
+      entries = entries.filter(item => String(item.id) !== cleanId);
 
       localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
       updateLegacyNotice();
       render();
       setSyncStatus('✅ Запись удалена');
+
+      await loadEntries(false);
     } catch (error) {
       alert('❌ ' + error.message);
       setSyncStatus('❌ ' + error.message);
@@ -1102,13 +1133,19 @@
     }
 
     button.disabled = true;
-    button.textContent = 'Проверяем и расшифровываем...';
+    button.textContent = 'Открываем журнал...';
 
     try {
-      accessKey = password;
-      cryptoKey = await deriveCryptoKey(password);
+      const [data, derivedKey] = await Promise.all([
+        apiPostWithKey('list', password),
+        deriveCryptoKey(password)
+      ]);
 
-      await loadEntries(false);
+      accessKey = password;
+      cryptoKey = derivedKey;
+      rawEntries = Array.isArray(data.entries) ? data.entries : [];
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+      entries = await decodeEntries(rawEntries);
 
       const failed = entries.some(entry => entry.decryptError);
 
@@ -1121,9 +1158,11 @@
       document.getElementById('offlineNotice').classList.add('hidden');
 
       input.value = '';
+      updateLegacyNotice();
       render();
+      setSyncStatus(`✅ Загружено записей: ${entries.length}`);
       startAutoSync();
-      } catch (err) {
+    } catch (err) {
       accessKey = '';
       cryptoKey = null;
       error.textContent = '❌ ' + err.message;
