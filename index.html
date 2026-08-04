@@ -139,11 +139,69 @@
 </div>
 <script>
 var PK='jp',DK='jd',pw=null,editingId=null;
-function utf8ToBase64(str){var bytes=new TextEncoder().encode(str);var binary='';for(var i=0;i<bytes.length;i++){binary+=String.fromCharCode(bytes[i]);}return btoa(binary);}
-function base64ToUtf8(base64){try{var binary=atob(base64);var bytes=new Uint8Array(binary.length);for(var i=0;i<binary.length;i++){bytes[i]=binary.charCodeAt(i);}return new TextDecoder().decode(bytes);}catch(e){return null;}}
-function xor(s,k){var r='';for(var i=0;i<s.length;i++){r+=String.fromCharCode(s.charCodeAt(i)^k.charCodeAt(i%k.length));}return r;}
-function enc(d,p){return utf8ToBase64(xor(d,p));}
-function dec(d,p){try{var x=base64ToUtf8(d);if(x===null)return null;return xor(x,p);}catch(e){return null;}}
+
+// ===== ШИФРОВАНИЕ (ИСПРАВЛЕНО!) =====
+function utf8ToBase64(str) {
+    var bytes = new TextEncoder().encode(str);
+    var binary = '';
+    for (var i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function base64ToUtf8(base64) {
+    try {
+        var binary = atob(base64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+    } catch (e) {
+        return null;
+    }
+}
+
+function xor(s, k) {
+    var r = '';
+    for (var i = 0; i < s.length; i++) {
+        r += String.fromCharCode(s.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+    }
+    return r;
+}
+
+function enc(d, p) {
+    return utf8ToBase64(xor(d, p));
+}
+
+function dec(d, p) {
+    try {
+        var x = base64ToUtf8(d);
+        if (x === null) return null;
+        return xor(x, p);
+    } catch (e) {
+        return null;
+    }
+}
+
+// ===== ПРОВЕРКА ПАРОЛЯ =====
+function checkPassword(p) {
+    var stored = localStorage.getItem(DK);
+    if (!stored) return false;
+    var result = dec(stored, p);
+    // Если result === null — пароль неверный
+    if (result === null) return false;
+    // Пытаемся распарсить JSON — если получилось, пароль верный
+    try {
+        JSON.parse(result);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// ===== ОСТАЛЬНЫЕ ФУНКЦИИ =====
 function today(){var t=new Date();var m=String(t.getMonth()+1);var d=String(t.getDate());if(m.length<2)m='0'+m;if(d.length<2)d='0'+d;return t.getFullYear()+'-'+m+'-'+d;}
 function fmtDate(d){if(!d)return '';var p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
 function fmtDateFull(d){if(!d)return '';var p=d.split('-');var months=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return p[2]+' '+months[parseInt(p[1])-1]+' '+p[0];}
@@ -172,7 +230,7 @@ function exportData(){var entries=loadData();if(!entries.length){alert('Нет �
 function logout(){if(confirm('Выйти?')){pw=null;location.reload();}}
 var formatBtns=document.querySelectorAll('[data-cmd]');for(var i=0;i<formatBtns.length;i++){(function(btn){btn.addEventListener('click',function(){var cmd=this.dataset.cmd;document.getElementById('editor').focus();document.execCommand(cmd,false,null);setTimeout(function(){try{if(document.queryCommandState(cmd)){btn.classList.add('active');}else{btn.classList.remove('active');}}catch(e){}},10);});})(formatBtns[i]);}
 document.getElementById('date').value=today();var sp=localStorage.getItem(PK);if(sp){document.getElementById('authTitle').textContent='Введите пароль';document.getElementById('authDesc').textContent='Данные зашифрованы';document.getElementById('login').textContent='Войти';document.getElementById('hint').textContent='Введите ваш пароль';document.getElementById('reset').style.display='block';}else{document.getElementById('authTitle').textContent='Создайте пароль';document.getElementById('authDesc').textContent='Придумайте пароль для шифрования';document.getElementById('login').textContent='Создать';document.getElementById('hint').textContent='Минимум 4 символа';document.getElementById('reset').style.display='none';}
-document.getElementById('login').onclick=function(){var p=document.getElementById('pass').value.trim();document.getElementById('err').textContent='';if(p.length<4){document.getElementById('err').textContent='Минимум 4 символа';return;}var sp=localStorage.getItem(PK);if(!sp){localStorage.setItem(PK,p);localStorage.setItem(DK,enc('[]',p));pw=p;document.getElementById('pass').value='';enterApp();}else{var d=localStorage.getItem(DK);if(!d){document.getElementById('err').textContent='Ошибка';return;}var t=dec(d,p);if(t!==null){pw=p;document.getElementById('pass').value='';enterApp();}else{document.getElementById('err').textContent='Неверный пароль';document.getElementById('pass').value='';document.getElementById('pass').focus();}}};
+document.getElementById('login').onclick=function(){var p=document.getElementById('pass').value.trim();document.getElementById('err').textContent='';if(p.length<4){document.getElementById('err').textContent='Минимум 4 символа';return;}var sp=localStorage.getItem(PK);if(!sp){localStorage.setItem(PK,p);localStorage.setItem(DK,enc('[]',p));pw=p;document.getElementById('pass').value='';enterApp();}else{var stored=localStorage.getItem(DK);if(!stored){document.getElementById('err').textContent='Ошибка данных';return;}var result=dec(stored,p);if(result===null){document.getElementById('err').textContent='❌ Неверный пароль';document.getElementById('pass').value='';document.getElementById('pass').focus();return;}try{JSON.parse(result);pw=p;document.getElementById('pass').value='';enterApp();}catch(e){document.getElementById('err').textContent='❌ Неверный пароль';document.getElementById('pass').value='';document.getElementById('pass').focus();}}};
 document.getElementById('pass').onkeydown=function(e){if(e.key==='Enter'){document.getElementById('login').click();}};
 document.getElementById('reset').onclick=function(){if(confirm('Все данные будут удалены!')&&confirm('Точно?')){localStorage.removeItem(PK);localStorage.removeItem(DK);location.reload();}};
 function enterApp(){document.getElementById('auth').classList.add('hidden');document.getElementById('app').classList.remove('hidden');render();}
