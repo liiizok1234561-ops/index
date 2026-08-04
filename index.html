@@ -1,697 +1,818 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Журнал передачи смен</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:#f0f2f5;padding:12px;display:flex;justify-content:center;min-height:100vh}
-        .app{max-width:850px;width:100%;background:#fff;border-radius:20px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
-        .app-header{display:flex;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px;align-items:center;border-bottom:2px solid #f1f5f9;padding-bottom:10px;gap:8px}
-        .app-title{display:flex;align-items:center;gap:10px}
-        .app-title .icon{font-size:28px}
-        .app-title h1{font-size:18px;color:#1e293b;margin:0;font-weight:700}
-        .app-title .subtitle{font-size:11px;color:#94a3b8}
-        .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-        .inp{flex:1 1 140px;min-width:120px}
-        .inp label{font-size:11px;color:#666;display:block;margin-bottom:2px;font-weight:600}
-        .inp input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:15px;box-sizing:border-box;background:#fff}
-        .inp input:focus{border-color:#3b82f6;outline:0;box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
-        .toolbar{background:#f1f5f9;padding:8px;border-radius:10px;margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-        .toolbar button{padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;font-size:14px;min-height:40px}
-        .toolbar button:hover{background:#e2e8f0}
-        .toolbar button.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
-        .toolbar .sep{color:#ccc;margin:0 2px}
-        #editor{min-height:140px;border:1px solid #ddd;border-radius:10px;padding:12px;outline:0;font-size:15px;background:#fff;line-height:1.7}
-        #editor:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,0.1)}
-        .btn{padding:10px 20px;border:0;border-radius:20px;font-weight:bold;cursor:pointer;margin:3px;font-size:15px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
-        .btn-blue{background:#1e293b;color:#fff}
-        .btn-blue:hover{background:#0f172a}
-        .btn-white{background:#fff;border:1px solid #ccc;color:#1e293b}
-        .btn-white:hover{background:#f1f5f9}
-        .btn-red{background:#fee2e2;color:#991b1b}
-        .btn-red:hover{background:#fecaca}
-        .btn-green{background:#dcfce7;color:#166534}
-        .btn-green:hover{background:#bbf7d0}
-        .btn-yellow{background:#fef3c7;color:#92400e}
-        .btn-yellow:hover{background:#fde68a}
-        .list{margin-top:15px}
-        .date-group{border:1px solid #e2e8f0;border-radius:12px;margin-bottom:10px;overflow:hidden}
-        .date-header{background:#f8fafc;padding:14px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:50px}
-        .date-header:hover{background:#f1f5f9}
-        .date-header .date-label{font-weight:bold;font-size:15px;color:#1e293b}
-        .date-header .date-count{font-size:13px;color:#64748b}
-        .date-header .date-arrow{font-size:14px;color:#94a3b8;transition:transform 0.3s}
-        .date-header .date-arrow.open{transform:rotate(180deg)}
-        .date-entries{display:none;padding:10px 12px;background:#fff}
-        .date-entries.open{display:block}
-        .card{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:8px;background:#fff}
-        .card:last-child{margin-bottom:0}
-        .card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-        .card-header{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:6px}
-        .card-name{font-weight:bold;font-size:15px}
-        .card-nick{background:#ede9fe;color:#5b21b6;padding:2px 12px;border-radius:12px;font-size:12px;margin-left:6px;display:inline-block}
-        .card-preview{color:#1a1a1a!important;cursor:pointer;margin-top:5px;padding:6px 4px;font-size:14px;border-radius:4px}
-        .card-preview:hover{background:#f8fafc}
-        .card-body{display:none;margin-top:6px;padding:10px;background:#f8fafc;border-radius:8px;border-left:3px solid #3b82f6;line-height:1.6;color:#1a1a1a;font-size:14px;word-wrap:break-word}
-        .card-body.show{display:block}
-        .card-body a[target="_blank"]{display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe}
-        .card-actions{display:flex;gap:8px;margin-top:8px;justify-content:flex-end;border-top:1px solid #f1f5f9;padding-top:8px;flex-wrap:wrap}
-        .card-actions button{border:0;background:0;cursor:pointer;padding:6px 14px;border-radius:6px;font-size:14px;min-height:36px}
-        .card-actions .edit-btn{color:#2563eb}
-        .card-actions .edit-btn:hover{background:#dbeafe}
-        .card-actions .del-btn{color:#dc2626}
-        .card-actions .del-btn:hover{background:#fee2e2}
-        .auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.92);display:flex;justify-content:center;align-items:center;z-index:9999}
-        .auth-box{background:#fff;border-radius:24px;padding:30px 24px;width:92%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
-        .auth-box .auth-icon{font-size:48px;margin-bottom:8px}
-        .auth-box h2{font-size:20px;color:#1e293b;margin-bottom:4px}
-        .auth-box p{color:#64748b;font-size:14px;margin-bottom:14px}
-        .auth-box input{width:100%;padding:14px;font-size:18px;text-align:center;border:2px solid #e2e8f0;border-radius:14px;margin:8px 0;box-sizing:border-box}
-        .auth-box input:focus{border-color:#3b82f6;outline:0}
-        .hidden{display:none!important}
-        .err{color:#dc2626;font-size:13px;min-height:20px}
-        .hint{color:#94a3b8;font-size:12px;margin-top:6px}
-        .empty-state{color:#94a3b8;text-align:center;padding:30px}
-        .edit-mode{border-color:#3b82f6!important;box-shadow:0 0 0 3px rgba(59,130,246,0.2)}
-        .badge{display:inline-block;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:4px}
-        .loading{display:flex;justify-content:center;align-items:center;padding:30px;gap:10px;color:#64748b}
-        .loading .spinner{width:20px;height:20px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @media (max-width:480px){body{padding:8px}.app{padding:12px;border-radius:16px}.app-title h1{font-size:16px}.inp{flex:1 1 100%;min-width:100%}.inp input{font-size:16px;padding:12px}.toolbar button{font-size:13px;padding:6px 10px;min-height:36px}.btn{padding:10px 16px;font-size:14px;min-height:40px}}
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Журнал передачи смен</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#eef2f7;color:#172033}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .hidden{display:none!important}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.92);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9999}
+    .modal{width:min(390px,100%);background:#fff;border-radius:24px;padding:26px;box-shadow:0 24px 80px rgba(0,0,0,.3);text-align:center}
+    .modal-icon{font-size:48px}
+    .modal h2{margin:8px 0 4px;font-size:22px}
+    .modal p{margin:0 0 16px;color:#64748b;font-size:14px}
+    .modal input{width:100%;padding:14px;border:2px solid #e2e8f0;border-radius:14px;text-align:center;font-size:17px}
+    .modal input:focus{outline:0;border-color:#2563eb}
+    .error{min-height:20px;margin-top:8px;color:#dc2626;font-size:13px}
+    .spinner{width:26px;height:26px;border:3px solid #dbe3ef;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite;margin:16px auto}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .page{width:min(1000px,calc(100% - 20px));margin:10px auto 40px;background:#fff;border-radius:22px;box-shadow:0 8px 30px rgba(15,23,42,.08);overflow:hidden}
+    .header{padding:16px 18px;border-bottom:1px solid #e8edf4;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:10px}
+    .brand-icon{font-size:30px}
+    .brand h1{font-size:19px;margin:0}
+    .brand small{display:block;color:#8a98aa;margin-top:2px}
+    .header-actions{display:flex;gap:7px;flex-wrap:wrap}
+    .content{padding:16px}
+    .grid{display:grid;grid-template-columns:1.3fr .8fr .7fr .8fr;gap:10px}
+    .field label{display:block;font-size:12px;font-weight:700;color:#586579;margin-bottom:4px}
+    .field input,.field select,.search{width:100%;border:1px solid #d8e0ea;border-radius:11px;padding:11px 12px;background:#fff}
+    .field input:focus,.field select:focus,.search:focus{outline:0;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    .toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f3f6fa;padding:8px;border-radius:11px;margin-top:12px}
+    .toolbar button{border:1px solid #d4dce7;background:#fff;border-radius:8px;min-height:38px;padding:7px 11px}
+    .toolbar button.active{background:#2563eb;color:#fff;border-color:#2563eb}
+    .sep{color:#b1bac7}
+    #editor{min-height:150px;border:1px solid #d8e0ea;border-radius:11px;padding:12px;margin-top:8px;line-height:1.65;outline:0}
+    #editor:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    #editor.editing{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.12)}
+    .pin-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:#475569}
+    .actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+    .btn{border:0;border-radius:12px;padding:10px 15px;font-weight:700;min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+    .btn-dark{background:#172033;color:#fff}
+    .btn-primary{background:#2563eb;color:#fff}
+    .btn-light{background:#f3f6fa;color:#27364a;border:1px solid #dce3ec}
+    .btn-danger{background:#fee2e2;color:#991b1b}
+    .btn-warning{background:#fef3c7;color:#92400e}
+    .btn-success{background:#dcfce7;color:#166534}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+    .list-top{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-top:22px}
+    .list-title h2{font-size:17px;margin:0}
+    .status-line{font-size:12px;color:#7a8899;margin-top:3px}
+    .search-wrap{min-width:260px}
+    .filters{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+    .filter{border:1px solid #dbe2eb;background:#fff;color:#475569;border-radius:999px;padding:7px 11px;font-size:13px}
+    .filter.active{background:#172033;color:#fff;border-color:#172033}
+    .empty{padding:36px;text-align:center;color:#94a3b8}
+    .date-group{border:1px solid #e1e7ef;border-radius:13px;overflow:hidden;margin-bottom:11px}
+    .date-head{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;background:#f8fafc;cursor:pointer}
+    .date-head:hover{background:#f3f6fa}
+    .date-label{font-weight:800}
+    .date-meta{display:flex;align-items:center;gap:9px;color:#708094;font-size:13px}
+    .arrow{transition:transform .2s}
+    .arrow.closed{transform:rotate(-90deg)}
+    .date-items{padding:10px;background:#fff}
+    .date-items.closed{display:none}
+    .card{border:1px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:9px;position:relative}
+    .card:last-child{margin-bottom:0}
+    .card.pinned{border-color:#f6c453;background:#fffdf5}
+    .card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+    .person{font-weight:800}
+    .nick{display:inline-block;margin-left:5px;padding:3px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:12px}
+    .badges{display:flex;gap:5px;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}
+    .urgent{background:#fee2e2;color:#991b1b}
+    .in_work{background:#fef3c7;color:#92400e}
+    .done{background:#dcfce7;color:#166534}
+    .not_done{background:#e2e8f0;color:#334155}
+    .pinned-badge{background:#fff3bf;color:#7a4b00}
+    .preview{margin-top:8px;color:#334155;cursor:pointer;padding:6px;border-radius:7px}
+    .preview:hover{background:#f8fafc}
+    .body{display:none;margin-top:7px;padding:11px;background:#f8fafc;border-radius:9px;border-left:3px solid #2563eb;line-height:1.6;overflow-wrap:anywhere}
+    .body.show{display:block}
+    .body a{color:#2563eb}
+    .card-actions{display:flex;justify-content:flex-end;gap:6px;border-top:1px solid #eef2f6;margin-top:9px;padding-top:8px;flex-wrap:wrap}
+    .card-actions button{border:0;background:transparent;padding:7px 10px;border-radius:7px}
+    .card-actions .edit{color:#2563eb}
+    .card-actions .edit:hover{background:#dbeafe}
+    .card-actions .delete{color:#dc2626}
+    .card-actions .delete:hover{background:#fee2e2}
+    .offline{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:10px;padding:9px 11px;font-size:13px;margin-bottom:10px}
+    @media(max-width:760px){
+      .grid{grid-template-columns:1fr 1fr}
+      .list-top{grid-template-columns:1fr}
+      .search-wrap{min-width:0}
+    }
+    @media(max-width:480px){
+      .page{width:100%;margin:0;border-radius:0;min-height:100vh}
+      .content,.header{padding:12px}
+      .grid{grid-template-columns:1fr}
+      .header-actions{width:100%}
+      .header-actions .btn{flex:1;padding:8px 10px;font-size:12px}
+      .actions .btn{flex:1}
+      .toolbar button{font-size:13px;padding:6px 9px}
+    }
+  </style>
 </head>
 <body>
 
-<div id="loadingScreen" class="auth-overlay">
-    <div class="auth-box">
-        <div class="auth-icon">📋</div>
-        <h2>Журнал передачи смен</h2>
-        <div class="loading">
-            <div class="spinner"></div>
-            <span>Загрузка данных...</span>
-        </div>
-    </div>
+<div id="loading" class="overlay">
+  <div class="modal">
+    <div class="modal-icon">📋</div>
+    <h2>Журнал передачи смен</h2>
+    <p>Подключаемся к общей таблице</p>
+    <div class="spinner"></div>
+  </div>
 </div>
 
-<div id="auth" class="auth-overlay hidden">
-    <div class="auth-box">
-        <div class="auth-icon">📋</div>
-        <h2 id="authTitle">Создайте пароль</h2>
-        <p id="authDesc" style="color:#64748b;">Придумайте пароль для шифрования данных</p>
-        <input type="password" id="pass" placeholder="......" maxlength="20">
-        <div class="err" id="err"></div>
-        <button class="btn btn-blue" id="login" style="width:100%;padding:14px;font-size:16px;">Создать</button>
-        <button class="btn btn-red" id="reset" style="width:100%;margin-top:8px;display:none;padding:14px;">Сбросить всё</button>
-        <div class="hint" id="hint">Минимум 4 символа</div>
-    </div>
+<div id="access" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-icon">🔐</div>
+    <h2>Код доступа</h2>
+    <p>Введите общий код, указанный в Apps Script</p>
+    <input id="accessKey" type="password" placeholder="Код доступа">
+    <div id="accessError" class="error"></div>
+    <button id="accessButton" class="btn btn-primary" style="width:100%">Войти</button>
+  </div>
 </div>
 
-<div id="app" class="app hidden">
-    <div class="app-header">
-        <div class="app-title">
-            <span class="icon">📋</span>
-            <div>
-                <h1>Журнал передачи смен</h1>
-                <span class="subtitle">📌 Общие данные для всех</span>
-            </div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-yellow" onclick="syncData()" style="font-size:11px;padding:4px 12px;min-height:32px;">🔄 Синхронизировать</button>
-            <button class="btn btn-green" onclick="clearAll()" style="font-size:11px;padding:4px 12px;min-height:32px;">🗑 Очистить всё</button>
-            <button class="btn btn-red" onclick="logout()" style="font-size:11px;padding:4px 12px;min-height:32px;">🚪 Выйти</button>
-        </div>
+<main id="app" class="page hidden">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">📋</div>
+      <div>
+        <h1>Журнал передачи смен</h1>
+        <small>Общие данные для всех сотрудников</small>
+      </div>
     </div>
-    
-    <div class="row">
-        <div class="inp"><label>👤 ФИО</label><input id="fio" placeholder="Иванов Иван"></div>
-        <div class="inp" style="flex:0.6;min-width:100px"><label>🐾 Кличка</label><input id="nick" placeholder="Fox"></div>
-        <div class="inp" style="flex:0.7;min-width:120px"><label>📅 Дата</label><input type="date" id="date"></div>
+    <div class="header-actions">
+      <button class="btn btn-warning" onclick="loadEntries(true)">🔄 Обновить</button>
+      <button class="btn btn-success" onclick="exportData()">📤 Экспорт</button>
+      <button class="btn btn-danger" onclick="clearAll()">🗑 Очистить</button>
     </div>
-    
-    <label style="font-size:12px;color:#666;font-weight:600;display:block;margin-bottom:4px;">📝 Описание</label>
+  </header>
+
+  <section class="content">
+    <div id="offlineNotice" class="offline hidden">
+      Нет связи с таблицей. Показана последняя сохранённая копия.
+    </div>
+
+    <div class="grid">
+      <div class="field">
+        <label>👤 ФИО</label>
+        <input id="fullName" placeholder="Иванов Иван">
+      </div>
+      <div class="field">
+        <label>🐾 Кличка</label>
+        <input id="nickname" placeholder="Fox">
+      </div>
+      <div class="field">
+        <label>📅 Дата</label>
+        <input id="entryDate" type="date">
+      </div>
+      <div class="field">
+        <label>🚦 Статус</label>
+        <select id="status">
+          <option value="urgent">🔴 Срочно</option>
+          <option value="in_work" selected>🟡 В работе</option>
+          <option value="done">🟢 Выполнено</option>
+          <option value="not_done">⚪ Не выполнено</option>
+        </select>
+      </div>
+    </div>
+
     <div class="toolbar">
-        <button type="button" data-cmd="bold"><b>B</b></button>
-        <button type="button" data-cmd="italic"><i>I</i></button>
-        <button type="button" data-cmd="underline"><u>U</u></button>
-        <span class="sep">|</span>
-        <button type="button" onclick="insertList('•')">• Список</button>
-        <button type="button" onclick="insertList('1.')">1. Список</button>
-        <span class="sep">|</span>
-        <button type="button" onclick="addImg()" style="color:#2563eb;">🔗 Ссылка</button>
-        <span class="sep">|</span>
-        <button type="button" onclick="clearEditorFormat()" style="color:#dc2626;">🧹 Очистить</button>
+      <button data-command="bold"><b>B</b></button>
+      <button data-command="italic"><i>I</i></button>
+      <button data-command="underline"><u>U</u></button>
+      <span class="sep">|</span>
+      <button onclick="insertBulletList()">• Список</button>
+      <button onclick="insertNumberList()">1. Список</button>
+      <span class="sep">|</span>
+      <button onclick="insertLink()">🔗 Ссылка</button>
+      <button onclick="removeFormatting()">🧹 Формат</button>
     </div>
-    <div id="editor" contenteditable="true"></div>
-    
-    <div style="margin-top:10px;display:flex;gap:5px;flex-wrap:wrap;">
-        <button class="btn btn-blue" onclick="add()">➕ Добавить</button>
-        <button class="btn btn-white" onclick="clearForm()">🧹 Очистить всё</button>
-        <button class="btn btn-white" onclick="exportData()">📤 Экспорт</button>
-        <span id="editId" style="display:none;"></span>
-        <button class="btn btn-blue" id="updateBtn" style="display:none;background:#2563eb;" onclick="update()">💾 Обновить</button>
-        <button class="btn btn-white" id="cancelBtn" style="display:none;" onclick="cancelEdit()">❌ Отмена</button>
+
+    <div id="editor" contenteditable="true" aria-label="Описание"></div>
+
+    <label class="pin-row">
+      <input id="pinned" type="checkbox">
+      📌 Закрепить запись сверху
+    </label>
+
+    <div class="actions">
+      <button id="createButton" class="btn btn-dark" onclick="createEntry()">➕ Добавить</button>
+      <button id="updateButton" class="btn btn-primary hidden" onclick="updateEntry()">💾 Сохранить изменения</button>
+      <button id="cancelButton" class="btn btn-light hidden" onclick="cancelEdit()">❌ Отмена</button>
+      <button class="btn btn-light" onclick="clearForm()">🧹 Очистить форму</button>
     </div>
-    
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;flex-wrap:wrap;gap:8px;">
-        <h2 style="font-size:16px;color:#1e293b;">📖 Последние записи</h2>
-        <span id="syncStatus" style="font-size:11px;color:#94a3b8;"></span>
+
+    <div class="list-top">
+      <div class="list-title">
+        <h2>📖 Записи</h2>
+        <div id="syncStatus" class="status-line"></div>
+      </div>
+      <div class="search-wrap">
+        <input id="search" class="search" placeholder="🔍 Поиск по ФИО, кличке или тексту">
+      </div>
     </div>
-    <div id="list" class="list"></div>
-</div>
+
+    <div class="filters">
+      <button class="filter active" data-filter="all">Все</button>
+      <button class="filter" data-filter="urgent">🔴 Срочно</button>
+      <button class="filter" data-filter="in_work">🟡 В работе</button>
+      <button class="filter" data-filter="done">🟢 Выполнено</button>
+      <button class="filter" data-filter="not_done">⚪ Не выполнено</button>
+      <button class="filter" data-filter="pinned">📌 Закреплённые</button>
+    </div>
+
+    <div id="list"></div>
+  </section>
+</main>
 
 <script>
-// ===== ВАШ НОВЫЙ URL ИЗ APPSCRIPT =====
-var APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiShfGhjz4t2HPCWBJSTu_l5LaAHCI9NZPMzIvhhfA5wqRLcKitr-OoyvWjp7iBW-a/exec';
+  const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOWqG8iNLcQF6q51K5Mp8D4MFK_c3ltCAKxNGxY16erf50TuJhwQouWp9IRZDR12SV/exec';
 
-// ===== ПЕРЕМЕННЫЕ =====
-var PK = 'jp';
-var DK = 'jd';
-var pw = null;
-var editingId = null;
-var entries = [];
+  const CACHE_KEY = 'shiftJournalCacheV2';
+  const ACCESS_KEY_STORAGE = 'shiftJournalAccessKey';
 
-// ===== ШИФРОВАНИЕ =====
-function utf8ToBase64(str) {
-    var bytes = new TextEncoder().encode(str);
-    var binary = '';
-    for (var i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
+  let entries = [];
+  let editingId = null;
+  let currentFilter = 'all';
+  let autoSyncTimer = null;
+  let accessKey = localStorage.getItem(ACCESS_KEY_STORAGE) || '';
+
+  const statusLabels = {
+    urgent: '🔴 Срочно',
+    in_work: '🟡 В работе',
+    done: '🟢 Выполнено',
+    not_done: '⚪ Не выполнено'
+  };
+
+  function today() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatDate(date) {
+    if (!date) return 'Без даты';
+    const parts = date.split('-');
+    if (parts.length !== 3) return date;
+
+    const months = [
+      'января','февраля','марта','апреля','мая','июня',
+      'июля','августа','сентября','октября','ноября','декабря'
+    ];
+
+    return `${parts[2]} ${months[Number(parts[1]) - 1]} ${parts[0]}`;
+  }
+
+  function escapeHtml(value) {
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+  }
+
+  function htmlToText(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html || '';
+    return (div.textContent || div.innerText || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function previewText(html) {
+    const text = htmlToText(html);
+    if (!text) return '📝 Пустое описание';
+    return text.length > 100 ? text.slice(0, 100) + '…' : text;
+  }
+
+  function safeId(id) {
+    return String(id).replace(/[^a-zA-Z0-9_-]/g, '_');
+  }
+
+  function getPayload(action, extra) {
+    return Object.assign({
+      action,
+      key: accessKey
+    }, extra || {});
+  }
+
+  async function apiGet() {
+    const url = new URL(APPSCRIPT_URL);
+    url.searchParams.set('action', 'list');
+
+    if (accessKey) {
+      url.searchParams.set('key', accessKey);
     }
-    return btoa(binary);
-}
 
-function base64ToUtf8(base64) {
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      cache: 'no-store',
+      redirect: 'follow'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Ошибка Apps Script');
+    }
+
+    return data;
+  }
+
+  async function apiPost(action, extra) {
+    const response = await fetch(APPSCRIPT_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      body: JSON.stringify(getPayload(action, extra))
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Ошибка Apps Script');
+    }
+
+    return data;
+  }
+
+  async function loadEntries(showStatus) {
+    if (showStatus) {
+      setSyncStatus('⏳ Загружаем данные...');
+    }
+
     try {
-        var binary = atob(base64);
-        var bytes = new Uint8Array(binary.length);
-        for (var i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i);
-        }
-        return new TextDecoder().decode(bytes);
-    } catch (e) {
-        return null;
+      const data = await apiGet();
+      entries = Array.isArray(data.entries) ? data.entries : [];
+      saveCache();
+      document.getElementById('offlineNotice').classList.add('hidden');
+      setSyncStatus(`✅ Загружено записей: ${entries.length}`);
+      render();
+      return true;
+    } catch (error) {
+      console.error(error);
+
+      if (/код доступа/i.test(error.message)) {
+        showAccess();
+        return false;
+      }
+
+      loadCache();
+      document.getElementById('offlineNotice').classList.remove('hidden');
+      setSyncStatus(`❌ ${error.message}`);
+      render();
+      return false;
     }
-}
+  }
 
-function xor(s, k) {
-    var r = '';
-    for (var i = 0; i < s.length; i++) {
-        r += String.fromCharCode(s.charCodeAt(i) ^ k.charCodeAt(i % k.length));
-    }
-    return r;
-}
+  function saveCache() {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(entries));
+  }
 
-function enc(d, p) {
-    return utf8ToBase64(xor(d, p));
-}
-
-function dec(d, p) {
+  function loadCache() {
     try {
-        var x = base64ToUtf8(d);
-        if (x === null) return null;
-        return xor(x, p);
-    } catch (e) {
-        return null;
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+      entries = Array.isArray(cached) ? cached : [];
+    } catch (_) {
+      entries = [];
     }
-}
+  }
 
-// ===== РАБОТА С APPSCRIPT =====
-function loadFromAppScript() {
-    document.getElementById('syncStatus').textContent = '⏳ Загрузка...';
-    
-    return fetch(APPSCRIPT_URL)
-        .then(function(res) {
-            if (!res.ok) throw new Error('Ошибка загрузки: ' + res.status);
-            return res.json();
-        })
-        .then(function(data) {
-            var rows = data || [];
-            if (rows.length < 2) {
-                entries = [];
-                document.getElementById('syncStatus').textContent = '✅ Таблица пуста';
-                render();
-                return entries;
-            }
-            var result = [];
-            for (var i = 1; i < rows.length; i++) {
-                var row = rows[i];
-                result.push({
-                    id: row[0] || String(Date.now() + i),
-                    fullName: row[1] || '',
-                    nickname: row[2] || '',
-                    date: row[3] || '',
-                    html: row[4] || ''
-                });
-            }
-            entries = result;
-            document.getElementById('syncStatus').textContent = '✅ Загружено ' + entries.length + ' записей';
-            render();
-            return entries;
-        })
-        .catch(function(err) {
-            console.error('❌ Ошибка загрузки:', err);
-            document.getElementById('syncStatus').textContent = '❌ Ошибка: ' + err.message;
-            var local = loadData();
-            if (local.length) {
-                entries = local;
-                render();
-            }
-            return entries;
-        });
-}
+  function setSyncStatus(text) {
+    document.getElementById('syncStatus').textContent = text;
+  }
 
-function saveToAppScript(entry) {
-    return fetch(APPSCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            id: entry.id || String(Date.now() + Math.random()),
-            fullName: entry.fullName,
-            nickname: entry.nickname || '',
-            date: entry.date || '',
-            html: entry.html || ''
-        })
-    })
-    .then(function(res) {
-        if (!res.ok) throw new Error('Ошибка сохранения: ' + res.status);
-        return res.text();
+  function setBusy(busy) {
+    document.querySelectorAll('.actions button').forEach(button => {
+      button.disabled = busy;
     });
-}
+  }
 
-function deleteFromAppScript(id) {
-    return fetch(APPSCRIPT_URL + '?delete=' + id, {
-        method: 'DELETE'
-    })
-    .then(function(res) {
-        if (!res.ok) throw new Error('Ошибка удаления');
-        return res.text();
-    });
-}
+  function readForm() {
+    const fullName = document.getElementById('fullName').value.trim();
+    const nickname = document.getElementById('nickname').value.trim();
+    const date = document.getElementById('entryDate').value;
+    const status = document.getElementById('status').value;
+    const pinned = document.getElementById('pinned').checked;
+    const html = document.getElementById('editor').innerHTML.trim();
 
-function clearAppScript() {
-    return fetch(APPSCRIPT_URL + '?clear=true', {
-        method: 'DELETE'
-    })
-    .then(function(res) {
-        if (!res.ok) throw new Error('Ошибка очистки');
-        return res.text();
-    });
-}
+    if (!fullName) throw new Error('Введите ФИО');
+    if (!date) throw new Error('Укажите дату');
+    if (!htmlToText(html)) throw new Error('Добавьте описание');
 
-// ===== ЛОКАЛЬНОЕ ХРАНЕНИЕ =====
-function loadData() {
-    if (!pw) return [];
-    var d = localStorage.getItem(DK);
-    if (!d) return [];
-    var t = dec(d, pw);
-    if (t === null) return [];
-    try { return JSON.parse(t); } catch (e) { return []; }
-}
+    return { fullName, nickname, date, status, pinned, html };
+  }
 
-function saveData(arr) {
-    if (!pw) return;
-    localStorage.setItem(DK, enc(JSON.stringify(arr), pw));
-}
+  async function createEntry() {
+    try {
+      const entry = readForm();
+      setBusy(true);
+      setSyncStatus('⏳ Сохраняем запись...');
 
-// ===== ОСНОВНЫЕ ФУНКЦИИ =====
-function today(){var t=new Date();var m=String(t.getMonth()+1);var d=String(t.getDate());if(m.length<2)m='0'+m;if(d.length<2)d='0'+d;return t.getFullYear()+'-'+m+'-'+d;}
-function fmtDate(d){if(!d)return '';var p=d.split('-');return p[2]+'.'+p[1]+'.'+p[0];}
-function fmtDateFull(d){if(!d)return '';var p=d.split('-');var months=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return p[2]+' '+months[parseInt(p[1])-1]+' '+p[0];}
-function genId(){return Date.now().toString(36)+Math.random().toString(36).substr(2,5);}
-function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-function getPlainText(html){var temp=document.createElement('div');temp.innerHTML=html;var text=temp.textContent||temp.innerText||'';text=text.replace(/^\d+\.\s*/gm,'');text=text.replace(/^[\s]*[•\-*]\s*/gm,'');text=text.replace(/\s+/g,' ').trim();return text;}
-function getPreview(html){var plain=getPlainText(html);if(!plain)return '📝 (пусто)';if(plain.length<=70)return plain;return plain.substring(0,70)+'...';}
-function hasContent(html){return getPlainText(html).length>0;}
-function formatText(html){var text=html;text=text.replace(/([а-яА-Яa-zA-Z])([А-ЯA-Z])/g,function(match,p1,p2){if(match.indexOf('<')!==-1)return match;return p1+' '+p2;});return text;}
-function insertList(type){var editor=document.getElementById('editor');editor.focus();var sel=window.getSelection();var range=sel.getRangeAt(0);var text=type+' ';document.execCommand('insertText',false,text);}
-function addImg(){var u=prompt('Введите ссылку на изображение:');if(u&&u.trim()){var url=u.trim();document.getElementById('editor').focus();document.execCommand('insertHTML',false,'<a href="'+url+'" target="_blank" style="display:inline-block;padding:8px 16px;background:#eff6ff;border-radius:8px;color:#2563eb;text-decoration:none;font-size:14px;border:1px solid #bfdbfe;">🖼 Открыть изображение</a>');}}
-
-function render() {
-    var list = document.getElementById('list');
-    if (!entries.length) {
-        list.innerHTML = '<div class="empty-state">📭 Нет записей</div>';
-        return;
+      const result = await apiPost('create', { entry });
+      entries.unshift(result.entry);
+      saveCache();
+      clearForm();
+      render();
+      setSyncStatus('✅ Запись сохранена');
+    } catch (error) {
+      alert('❌ ' + error.message);
+      setSyncStatus('❌ ' + error.message);
+    } finally {
+      setBusy(false);
     }
-    var sorted = entries.slice().sort(function(a, b) {
-        if (a.date < b.date) return 1;
-        if (a.date > b.date) return -1;
-        return 0;
-    });
-    var groups = {};
-    for (var i = 0; i < sorted.length; i++) {
-        var date = sorted[i].date;
-        if (!groups[date]) groups[date] = [];
-        groups[date].push(sorted[i]);
-    }
-    var html = '';
-    var dates = Object.keys(groups).sort(function(a, b) {
-        if (a < b) return 1;
-        if (a > b) return -1;
-        return 0;
-    });
-    for (var g = 0; g < dates.length; g++) {
-        var date = dates[g];
-        var items = groups[date];
-        var dateDisplay = fmtDateFull(date);
-        var count = items.length;
-        var word = 'записей';
-        if (count === 1) word = 'запись';
-        if (count >= 2 && count <= 4) word = 'записи';
-        html += '<div class="date-group" data-date="' + date + '">';
-        html += '<div class="date-header" onclick="toggleGroup(this)">';
-        html += '<span class="date-label">📅 ' + dateDisplay + '</span>';
-        html += '<span style="display:flex;align-items:center;gap:10px;">';
-        html += '<span class="date-count">' + count + ' ' + word + '</span>';
-        html += '<span class="date-arrow">▼</span>';
-        html += '</span></div>';
-        html += '<div class="date-entries open">';
-        for (var j = 0; j < items.length; j++) {
-            var x = items[j];
-            var preview = getPreview(x.html);
-            var hasList = x.html.indexOf('•') !== -1 || x.html.indexOf('1.') !== -1;
-            var hasImg = x.html.indexOf('target="_blank"') !== -1;
-            var badges = '';
-            if (hasList) badges += ' <span class="badge">📋 список</span>';
-            if (hasImg) badges += ' <span class="badge">🔗 ссылка</span>';
-            html += '<div class="card" data-id="' + x.id + '">';
-            html += '<div class="card-header">';
-            html += '<div><span class="card-name">' + esc(x.fullName) + '</span>';
-            if (x.nickname) html += ' <span class="card-nick">' + esc(x.nickname) + '</span>';
-            html += '</div>';
-            html += '</div>';
-            html += '<div class="card-preview" onclick="toggleBody(this, \'' + x.id + '\')">' + esc(preview) + badges + '</div>';
-            html += '<div class="card-body" id="body-' + x.id + '">' + x.html + '</div>';
-            html += '<div class="card-actions">';
-            html += '<button class="edit-btn" onclick="edit(\'' + x.id + '\')">✏️ Редактировать</button>';
-            html += '<button class="del-btn" onclick="del(\'' + x.id + '\')">🗑 Удалить</button>';
-            html += '</div></div>';
-        }
-        html += '</div></div>';
-    }
-    list.innerHTML = html;
-}
+  }
 
-function toggleGroup(el) {
-    var entries = el.nextElementSibling;
-    var arrow = el.querySelector('.date-arrow');
-    if (entries.classList.contains('open')) {
-        entries.classList.remove('open');
-        arrow.classList.remove('open');
-    } else {
-        entries.classList.add('open');
-        arrow.classList.add('open');
-    }
-}
-
-function toggleBody(el, id) {
-    var body = document.getElementById('body-' + id);
-    if (!body) return;
-    if (body.classList.contains('show')) {
-        body.classList.remove('show');
-        el.innerHTML = el.dataset.preview || '';
-    } else {
-        body.classList.add('show');
-        el.dataset.preview = el.textContent;
-        el.innerHTML = '▲ Скрыть';
-    }
-}
-
-function del(id) {
-    if (!confirm('🗑 Удалить запись?')) return;
-    deleteFromAppScript(id).then(function() {
-        entries = entries.filter(function(x) { return x.id !== id; });
-        render();
-        document.getElementById('syncStatus').textContent = '✅ Запись удалена';
-        saveData(entries);
-    }).catch(function(err) {
-        alert('❌ Ошибка удаления: ' + err.message);
-    });
-}
-
-function edit(id) {
-    var entry = null;
-    for (var i = 0; i < entries.length; i++) {
-        if (entries[i].id === id) { entry = entries[i]; break; }
-    }
+  function beginEdit(id) {
+    const entry = entries.find(item => item.id === id);
     if (!entry) return;
+
     editingId = id;
-    document.getElementById('fio').value = entry.fullName;
-    document.getElementById('nick').value = entry.nickname || '';
-    document.getElementById('date').value = entry.date;
-    document.getElementById('editor').innerHTML = entry.html;
-    document.getElementById('editor').classList.add('edit-mode');
-    document.getElementById('updateBtn').style.display = 'inline-block';
-    document.getElementById('cancelBtn').style.display = 'inline-block';
-    document.getElementById('editId').textContent = id;
-    document.querySelector('.btn-blue:not(#updateBtn)').style.display = 'none';
+
+    document.getElementById('fullName').value = entry.fullName || '';
+    document.getElementById('nickname').value = entry.nickname || '';
+    document.getElementById('entryDate').value = entry.date || today();
+    document.getElementById('status').value = entry.status || 'in_work';
+    document.getElementById('pinned').checked = Boolean(entry.pinned);
+    document.getElementById('editor').innerHTML = entry.html || '';
+    document.getElementById('editor').classList.add('editing');
+
+    document.getElementById('createButton').classList.add('hidden');
+    document.getElementById('updateButton').classList.remove('hidden');
+    document.getElementById('cancelButton').classList.remove('hidden');
+
     document.getElementById('editor').scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
+  }
 
-function update() {
-    var f = document.getElementById('fio').value.trim();
-    var n = document.getElementById('nick').value.trim();
-    var d = document.getElementById('date').value;
-    var h = document.getElementById('editor').innerHTML.trim();
-    var id = document.getElementById('editId').textContent;
-    if (!f) { alert('Введите ФИО'); return; }
-    if (!d) { alert('Укажите дату'); return; }
-    if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
-    var formattedHtml = formatText(h);
-    var entry = { id: id, fullName: f, nickname: n, date: d, html: formattedHtml };
-    
-    deleteFromAppScript(id).then(function() {
-        return saveToAppScript(entry);
-    }).then(function() {
-        for (var i = 0; i < entries.length; i++) {
-            if (entries[i].id === id) { entries[i] = entry; break; }
-        }
-        render();
-        cancelEdit();
-        document.getElementById('syncStatus').textContent = '✅ Запись обновлена';
-        saveData(entries);
-    }).catch(function(err) {
-        alert('❌ Ошибка обновления: ' + err.message);
-    });
-}
+  async function updateEntry() {
+    try {
+      if (!editingId) return;
 
-function cancelEdit() {
+      const entry = Object.assign({ id: editingId }, readForm());
+      setBusy(true);
+      setSyncStatus('⏳ Обновляем запись...');
+
+      const result = await apiPost('update', { entry });
+      const index = entries.findIndex(item => item.id === editingId);
+
+      if (index !== -1) {
+        entries[index] = result.entry;
+      }
+
+      saveCache();
+      cancelEdit();
+      render();
+      setSyncStatus('✅ Запись обновлена');
+    } catch (error) {
+      alert('❌ ' + error.message);
+      setSyncStatus('❌ ' + error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function cancelEdit() {
     editingId = null;
-    document.getElementById('editor').classList.remove('edit-mode');
-    document.getElementById('updateBtn').style.display = 'none';
-    document.getElementById('cancelBtn').style.display = 'none';
-    document.getElementById('editId').textContent = '';
-    var btn = document.querySelector('.btn-blue:not(#updateBtn)');
-    if (btn) btn.style.display = 'inline-block';
-    clearForm();
-}
+    document.getElementById('editor').classList.remove('editing');
+    document.getElementById('createButton').classList.remove('hidden');
+    document.getElementById('updateButton').classList.add('hidden');
+    document.getElementById('cancelButton').classList.add('hidden');
+    clearForm(false);
+  }
 
-function add() {
-    var f = document.getElementById('fio').value.trim();
-    var n = document.getElementById('nick').value.trim();
-    var d = document.getElementById('date').value;
-    var h = document.getElementById('editor').innerHTML.trim();
-    if (!f) { alert('Введите ФИО'); return; }
-    if (!d) { alert('Укажите дату'); return; }
-    if (!h || !hasContent(h)) { alert('Добавьте описание'); return; }
-    var formattedHtml = formatText(h);
-    var newEntry = { id: genId(), fullName: f, nickname: n, date: d, html: formattedHtml };
-    document.getElementById('syncStatus').textContent = '⏳ Сохранение...';
-    saveToAppScript(newEntry).then(function() {
-        entries.unshift(newEntry);
-        render();
-        clearForm();
-        document.getElementById('syncStatus').textContent = '✅ Запись сохранена';
-        saveData(entries);
-    }).catch(function(err) {
-        alert('❌ Ошибка сохранения: ' + err.message);
-        document.getElementById('syncStatus').textContent = '❌ Ошибка сохранения';
-    });
-}
+  async function deleteEntry(id) {
+    if (!confirm('Удалить эту запись?')) return;
 
-function clearForm() {
-    document.getElementById('fio').value = '';
-    document.getElementById('nick').value = '';
-    document.getElementById('date').value = today();
+    try {
+      setSyncStatus('⏳ Удаляем запись...');
+      await apiPost('delete', { id });
+      entries = entries.filter(item => item.id !== id);
+      saveCache();
+      render();
+      setSyncStatus('✅ Запись удалена');
+    } catch (error) {
+      alert('❌ ' + error.message);
+      setSyncStatus('❌ ' + error.message);
+    }
+  }
+
+  async function clearAll() {
+    if (!confirm('Удалить ВСЕ записи из общей таблицы?')) return;
+    if (!confirm('Это действие нельзя отменить. Продолжить?')) return;
+
+    try {
+      setSyncStatus('⏳ Очищаем таблицу...');
+      await apiPost('clear');
+      entries = [];
+      saveCache();
+      render();
+      setSyncStatus('✅ Все записи удалены');
+    } catch (error) {
+      alert('❌ ' + error.message);
+      setSyncStatus('❌ ' + error.message);
+    }
+  }
+
+  function clearForm(resetEdit = true) {
+    document.getElementById('fullName').value = '';
+    document.getElementById('nickname').value = '';
+    document.getElementById('entryDate').value = today();
+    document.getElementById('status').value = 'in_work';
+    document.getElementById('pinned').checked = false;
     document.getElementById('editor').innerHTML = '';
-    if (editingId) cancelEdit();
-}
 
-function clearAll() {
-    if (!confirm('⚠️ Удалить ВСЕ записи?')) return;
-    if (!confirm('Точно?')) return;
-    clearAppScript().then(function() {
-        entries = [];
-        render();
-        saveData(entries);
-        document.getElementById('syncStatus').textContent = '✅ Все записи удалены';
-    }).catch(function(err) {
-        alert('❌ Ошибка очистки: ' + err.message);
+    if (resetEdit && editingId) {
+      cancelEdit();
+    }
+  }
+
+  function getFilteredEntries() {
+    const query = document.getElementById('search').value.trim().toLowerCase();
+
+    return entries
+      .filter(entry => {
+        if (currentFilter === 'pinned') return Boolean(entry.pinned);
+        if (currentFilter !== 'all') return entry.status === currentFilter;
+        return true;
+      })
+      .filter(entry => {
+        if (!query) return true;
+        const haystack = [
+          entry.fullName,
+          entry.nickname,
+          htmlToText(entry.html),
+          statusLabels[entry.status]
+        ].join(' ').toLowerCase();
+
+        return haystack.includes(query);
+      })
+      .sort((a, b) => {
+        if (Boolean(a.pinned) !== Boolean(b.pinned)) {
+          return a.pinned ? -1 : 1;
+        }
+
+        if (a.date !== b.date) {
+          return a.date < b.date ? 1 : -1;
+        }
+
+        return String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''));
+      });
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    const filtered = getFilteredEntries();
+
+    if (!filtered.length) {
+      list.innerHTML = '<div class="empty">📭 Записи не найдены</div>';
+      return;
+    }
+
+    const groups = {};
+
+    filtered.forEach(entry => {
+      const key = entry.date || '';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(entry);
     });
-}
 
-function clearEditorFormat() {
+    const dates = Object.keys(groups).sort().reverse();
+
+    list.innerHTML = dates.map(date => {
+      const items = groups[date];
+      const cards = items.map(renderCard).join('');
+
+      return `
+        <section class="date-group">
+          <div class="date-head" onclick="toggleDateGroup(this)">
+            <span class="date-label">📅 ${escapeHtml(formatDate(date))}</span>
+            <span class="date-meta">
+              ${items.length} ${entryWord(items.length)}
+              <span class="arrow">▼</span>
+            </span>
+          </div>
+          <div class="date-items">${cards}</div>
+        </section>
+      `;
+    }).join('');
+  }
+
+  function renderCard(entry) {
+    const id = escapeHtml(entry.id);
+    const domId = safeId(entry.id);
+    const pinClass = entry.pinned ? ' pinned' : '';
+    const pinBadge = entry.pinned
+      ? '<span class="badge pinned-badge">📌 Закреплено</span>'
+      : '';
+
+    return `
+      <article class="card${pinClass}">
+        <div class="card-top">
+          <div>
+            <span class="person">${escapeHtml(entry.fullName)}</span>
+            ${entry.nickname ? `<span class="nick">${escapeHtml(entry.nickname)}</span>` : ''}
+          </div>
+          <div class="badges">
+            ${pinBadge}
+            <span class="badge ${escapeHtml(entry.status)}">
+              ${escapeHtml(statusLabels[entry.status] || statusLabels.in_work)}
+            </span>
+          </div>
+        </div>
+
+        <div class="preview" onclick="toggleCard('${domId}', this)">
+          ${escapeHtml(previewText(entry.html))}
+        </div>
+
+        <div id="body-${domId}" class="body">${entry.html || ''}</div>
+
+        <div class="card-actions">
+          <button class="edit" onclick="beginEdit('${id}')">✏️ Редактировать</button>
+          <button class="delete" onclick="deleteEntry('${id}')">🗑 Удалить</button>
+        </div>
+      </article>
+    `;
+  }
+
+  function entryWord(count) {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+
+    if (mod10 === 1 && mod100 !== 11) return 'запись';
+    if ([2,3,4].includes(mod10) && ![12,13,14].includes(mod100)) return 'записи';
+    return 'записей';
+  }
+
+  function toggleDateGroup(head) {
+    const items = head.nextElementSibling;
+    const arrow = head.querySelector('.arrow');
+    items.classList.toggle('closed');
+    arrow.classList.toggle('closed');
+  }
+
+  function toggleCard(domId, preview) {
+    const body = document.getElementById('body-' + domId);
+    if (!body) return;
+
+    body.classList.toggle('show');
+    preview.textContent = body.classList.contains('show')
+      ? '▲ Скрыть описание'
+      : preview.dataset.original || preview.textContent;
+
+    if (!preview.dataset.original) {
+      preview.dataset.original = previewText(body.innerHTML);
+    }
+
+    if (!body.classList.contains('show')) {
+      preview.textContent = preview.dataset.original;
+    }
+  }
+
+  function exportData() {
+    const data = getFilteredEntries();
+
+    if (!data.length) {
+      alert('Нет записей для экспорта');
+      return;
+    }
+
+    let text = 'ЖУРНАЛ ПЕРЕДАЧИ СМЕН\n';
+    text += '='.repeat(60) + '\n\n';
+
+    data.forEach(entry => {
+      text += `${formatDate(entry.date)} | ${entry.fullName}`;
+      if (entry.nickname) text += ` (${entry.nickname})`;
+      text += ` | ${statusLabels[entry.status] || ''}`;
+      if (entry.pinned) text += ' | Закреплено';
+      text += '\n';
+      text += htmlToText(entry.html) + '\n\n';
+    });
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `journal_${today()}.txt`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function insertBulletList() {
+    document.getElementById('editor').focus();
+    document.execCommand('insertUnorderedList', false, null);
+  }
+
+  function insertNumberList() {
+    document.getElementById('editor').focus();
+    document.execCommand('insertOrderedList', false, null);
+  }
+
+  function insertLink() {
+    const url = prompt('Введите ссылку:');
+    if (!url) return;
+
+    const clean = url.trim();
+
+    if (!/^https?:\/\//i.test(clean)) {
+      alert('Ссылка должна начинаться с http:// или https://');
+      return;
+    }
+
+    document.getElementById('editor').focus();
+    document.execCommand(
+      'insertHTML',
+      false,
+      `<a href="${escapeHtml(clean)}" target="_blank" rel="noopener noreferrer">🔗 Открыть ссылку</a>`
+    );
+  }
+
+  function removeFormatting() {
     document.getElementById('editor').focus();
     document.execCommand('removeFormat', false, null);
-}
+  }
 
-function syncData() {
-    loadFromAppScript().then(function() {
-        render();
-        saveData(entries);
-    }).catch(function(err) {
-        alert('❌ Ошибка синхронизации: ' + err.message);
-    });
-}
+  function showAccess() {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('access').classList.remove('hidden');
+    document.getElementById('accessKey').focus();
+  }
 
-function exportData() {
-    if (!entries.length) { alert('Нет записей'); return; }
-    var sorted = entries.slice().sort(function(a, b) {
-        if (a.date < b.date) return 1;
-        if (a.date > b.date) return -1;
-        return 0;
-    });
-    var text = 'ЖУРНАЛ ПЕРЕДАЧИ СМЕН\n' + '='.repeat(50) + '\n\n';
-    for (var i = 0; i < sorted.length; i++) {
-        var x = sorted[i];
-        text += fmtDate(x.date) + ' | ' + x.fullName + (x.nickname ? ' (' + x.nickname + ')' : '') + '\n';
-        text += '   ' + getPlainText(x.html) + '\n\n';
-    }
-    var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'journal_' + today() + '.txt';
-    a.click();
-}
+  async function submitAccess() {
+    const input = document.getElementById('accessKey');
+    const error = document.getElementById('accessError');
+    accessKey = input.value.trim();
+    error.textContent = '';
 
-function logout() {
-    if (confirm('Выйти?')) {
-        pw = null;
-        location.reload();
-    }
-}
-
-// ===== ФОРМАТИРОВАНИЕ =====
-var formatBtns = document.querySelectorAll('[data-cmd]');
-for (var i = 0; i < formatBtns.length; i++) {
-    (function(btn) {
-        btn.addEventListener('click', function() {
-            var cmd = this.dataset.cmd;
-            document.getElementById('editor').focus();
-            document.execCommand(cmd, false, null);
-            setTimeout(function() {
-                try {
-                    if (document.queryCommandState(cmd)) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
-                } catch(e) {}
-            }, 10);
-        });
-    })(formatBtns[i]);
-}
-
-// ===== АВТОРИЗАЦИЯ =====
-document.getElementById('date').value = today();
-
-var sp = localStorage.getItem(PK);
-
-if (sp) {
-    document.getElementById('authTitle').textContent = 'Введите пароль';
-    document.getElementById('authDesc').textContent = 'Данные зашифрованы';
-    document.getElementById('login').textContent = 'Войти';
-    document.getElementById('hint').textContent = 'Введите ваш пароль';
-    document.getElementById('reset').style.display = 'block';
-} else {
-    document.getElementById('authTitle').textContent = 'Создайте пароль';
-    document.getElementById('authDesc').textContent = 'Придумайте пароль для шифрования';
-    document.getElementById('login').textContent = 'Создать';
-    document.getElementById('hint').textContent = 'Минимум 4 символа';
-    document.getElementById('reset').style.display = 'none';
-}
-
-document.getElementById('login').onclick = function() {
-    var p = document.getElementById('pass').value.trim();
-    var err = document.getElementById('err');
-    err.textContent = '';
-    if (p.length < 4) {
-        err.textContent = '⚠️ Минимум 4 символа';
-        return;
-    }
-    var hasPassword = localStorage.getItem(PK);
-    if (!hasPassword) {
-        localStorage.setItem(PK, p);
-        localStorage.setItem(DK, enc('[]', p));
-        pw = p;
-        document.getElementById('pass').value = '';
-        enterApp();
-        return;
-    }
-    var stored = localStorage.getItem(DK);
-    if (!stored) {
-        err.textContent = '❌ Ошибка данных';
-        return;
-    }
-    var decrypted = dec(stored, p);
-    if (decrypted === null) {
-        err.textContent = '❌ Неверный пароль';
-        document.getElementById('pass').value = '';
-        document.getElementById('pass').focus();
-        return;
-    }
     try {
-        JSON.parse(decrypted);
-        pw = p;
-        document.getElementById('pass').value = '';
-        enterApp();
-    } catch (e) {
-        err.textContent = '❌ Неверный пароль';
-        document.getElementById('pass').value = '';
-        document.getElementById('pass').focus();
+      const data = await apiGet();
+      localStorage.setItem(ACCESS_KEY_STORAGE, accessKey);
+      entries = Array.isArray(data.entries) ? data.entries : [];
+      saveCache();
+      document.getElementById('access').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      render();
+      startAutoSync();
+    } catch (err) {
+      error.textContent = '❌ ' + err.message;
     }
-};
+  }
 
-document.getElementById('pass').onkeydown = function(e) {
-    if (e.key === 'Enter') {
-        document.getElementById('login').click();
-    }
-};
+  function startAutoSync() {
+    if (autoSyncTimer) clearInterval(autoSyncTimer);
 
-document.getElementById('reset').onclick = function() {
-    if (confirm('Все данные будут удалены!') && confirm('Точно?')) {
-        localStorage.removeItem(PK);
-        localStorage.removeItem(DK);
-        location.reload();
-    }
-};
+    autoSyncTimer = setInterval(() => {
+      if (!editingId && document.visibilityState === 'visible') {
+        loadEntries(false);
+      }
+    }, 10000);
+  }
 
-function enterApp() {
-    document.getElementById('auth').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('loadingScreen').classList.add('hidden');
-    loadFromAppScript().then(function() {
-        saveData(entries);
-    }).catch(function() {
-        var local = loadData();
-        if (local.length) {
-            entries = local;
-            render();
-        }
+  document.querySelectorAll('[data-command]').forEach(button => {
+    button.addEventListener('click', function() {
+      const command = this.dataset.command;
+      document.getElementById('editor').focus();
+      document.execCommand(command, false, null);
+
+      try {
+        this.classList.toggle('active', document.queryCommandState(command));
+      } catch (_) {}
     });
-}
+  });
 
-document.getElementById('loadingScreen').classList.remove('hidden');
+  document.querySelectorAll('.filter').forEach(button => {
+    button.addEventListener('click', function() {
+      document.querySelectorAll('.filter').forEach(item => item.classList.remove('active'));
+      this.classList.add('active');
+      currentFilter = this.dataset.filter;
+      render();
+    });
+  });
 
-if (localStorage.getItem(PK)) {
-    document.getElementById('loadingScreen').classList.add('hidden');
-    document.getElementById('auth').classList.remove('hidden');
-} else {
-    document.getElementById('loadingScreen').classList.add('hidden');
-    document.getElementById('auth').classList.remove('hidden');
-}
+  document.getElementById('search').addEventListener('input', render);
+  document.getElementById('accessButton').addEventListener('click', submitAccess);
+  document.getElementById('accessKey').addEventListener('keydown', event => {
+    if (event.key === 'Enter') submitAccess();
+  });
+
+  async function init() {
+    document.getElementById('entryDate').value = today();
+
+    const connected = await loadEntries(false);
+
+    document.getElementById('loading').classList.add('hidden');
+
+    if (connected) {
+      document.getElementById('app').classList.remove('hidden');
+      startAutoSync();
+    }
+  }
+
+  init();
 </script>
 </body>
 </html>
