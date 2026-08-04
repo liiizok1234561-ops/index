@@ -320,8 +320,65 @@
   }
 
   function previewText(html) {
-    const text = htmlToText(html);
+    const container = document.createElement('div');
+    container.innerHTML = sanitizeRichHtml(html || '');
+
+    // Если есть список — показываем только первый пункт.
+    const firstListItem = container.querySelector('li');
+
+    if (firstListItem) {
+      const itemText = (firstListItem.textContent || '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!itemText) return '📝 Пустое описание';
+      return itemText.length > 100 ? itemText.slice(0, 100) + '…' : itemText;
+    }
+
+    // Для обычного текста сначала ищем первую отдельную строку или абзац.
+    const firstBlock = container.querySelector('p, div');
+
+    let text = firstBlock
+      ? (firstBlock.textContent || '').trim()
+      : '';
+
+    // Если браузер сохранил переносы как <br>, берём только текст до первого <br>.
+    if (!text) {
+      const clone = container.cloneNode(true);
+      const firstBreak = clone.querySelector('br');
+
+      if (firstBreak) {
+        let node = clone.firstChild;
+        const parts = [];
+
+        while (node && node !== firstBreak) {
+          parts.push(node.textContent || '');
+          node = node.nextSibling;
+        }
+
+        text = parts.join(' ').trim();
+      }
+    }
+
+    // Запасной вариант: первая строка исходного текста.
+    if (!text) {
+      text = (container.innerText || container.textContent || '')
+        .split(/\n+/)
+        .map(line => line.trim())
+        .find(Boolean) || '';
+    }
+
+    text = text.replace(/\s+/g, ' ').trim();
+
     if (!text) return '📝 Пустое описание';
+
+    // Если строка длинная, показываем первое предложение.
+    const sentence = text.match(/^.*?[.!?](?:\s|$)/);
+
+    if (sentence && sentence[0].trim().length <= 100) {
+      return sentence[0].trim();
+    }
+
     return text.length > 100 ? text.slice(0, 100) + '…' : text;
   }
 
