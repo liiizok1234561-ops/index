@@ -339,6 +339,15 @@
     .attachments-hint{margin-top:7px;color:#94a3b8;font-size:11px}
     .card-images{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .card-image{width:110px;height:110px;border-radius:9px;overflow:hidden;border:1px solid #dbe2eb;background:#eef2f7;cursor:pointer}
+
+    .image-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.88)}
+    .image-modal.hidden{display:none!important}
+    .image-modal-content{position:relative;max-width:96vw;max-height:94vh;display:flex;align-items:center;justify-content:center}
+    .image-modal img{display:block;max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain;border-radius:10px;background:#111827}
+    .image-modal-close{position:fixed;top:14px;right:14px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.95);color:#111827;font-size:22px;display:flex;align-items:center;justify-content:center;z-index:10001;box-shadow:0 3px 15px rgba(0,0,0,.25)}
+    .image-load-error{width:100%;padding:10px;border-radius:8px;background:#fff7ed;color:#9a3412;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .image-retry{border:1px solid #fdba74;background:#fff;color:#9a3412;border-radius:7px;padding:5px 8px;cursor:pointer;white-space:nowrap}
+
     body[data-theme="dark"] .record-type-switch,body[data-theme="dark"] .attachments{background:#182235;border-color:#334155}
     body[data-theme="dark"] .record-type-btn{color:#94a3b8}
     body[data-theme="dark"] .record-type-btn.active,body[data-theme="dark"] .photo-picker{background:#273449;color:#f8fafc;border-color:#374151}
@@ -584,6 +593,13 @@
   </section>
 </main>
 
+
+<div id="imageModal" class="image-modal hidden" onclick="closeImageModal(event)">
+  <button class="image-modal-close" type="button" onclick="closeImageModal(event)">✕</button>
+  <div class="image-modal-content" onclick="event.stopPropagation()">
+    <img id="imageModalImg" src="" alt="Фото">
+  </div>
+</div>
 <script>
   const APPSCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOWqG8iNLcQF6q51K5Mp8D4MFK_c3ltCAKxNGxY16erf50TuJhwQouWp9IRZDR12SV/exec';
 
@@ -598,6 +614,7 @@
   let recordType = 'patient';
   let pendingPhotos = [];
   let existingPhotos = [];
+  const imageCache = new Map();
   let autoSyncTimer = null;
   const expandedCards = new Set();
   const expandedDateGroups = new Set();
@@ -1068,20 +1085,30 @@
 
   async function fileToOptimizedDataUrl(file) {
     const bitmap = await createImageBitmap(file);
-    const maxSide = 1600;
+    const maxSide = 1200;
     const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
     bitmap.close();
-    return canvas.toDataURL('image/jpeg',0.82);
+    return canvas.toDataURL('image/jpeg',0.76);
   }
 
   function renderPhotoPreview(){
     const box=document.getElementById('photoPreview');
     const all=[...existingPhotos.map((p,i)=>({kind:'existing',p,i})),...pendingPhotos.map((p,i)=>({kind:'pending',p,i}))];
-    box.innerHTML=all.map(x=>`<div class="photo-item"><img src="${x.p.previewUrl||x.p.dataUrl||''}" alt="Фото"><button class="photo-remove" type="button" onclick="removePhoto('${x.kind}',${x.i})">✕</button></div>`).join('');
+
+    box.innerHTML=all.map(x=>{
+      const src=x.p.previewUrl||x.p.dataUrl||'';
+
+      return `<div class="photo-item">
+        ${src
+          ? `<img src="${src}" alt="Фото" onclick="openImageModal('${src}')">`
+          : '<div style="padding:8px;font-size:11px;color:#94a3b8">Фото</div>'}
+        <button class="photo-remove" type="button" onclick="removePhoto('${x.kind}',${x.i})">✕</button>
+      </div>`;
+    }).join('');
   }
   function removePhoto(kind,index){ if(kind==='existing') existingPhotos.splice(index,1); else pendingPhotos.splice(index,1); renderPhotoPreview(); }
 
@@ -1101,11 +1128,100 @@
       setSyncStatus(`⏳ Загружаем фото ${i+1}/${pendingPhotos.length}...`);
       const encrypted=await encryptImageDataUrl(pendingPhotos[i].dataUrl);
       const result=await apiPost('uploadImage',{image:encrypted,name:pendingPhotos[i].name||`photo_${Date.now()}.jpg`});
+      imageCache.set(String(result.fileId), pendingPhotos[i].dataUrl);
       uploaded.push({id:result.fileId});
     }
     return uploaded;
   }
-  async function loadImageForDisplay(fileId){ const result=await apiPost('getImage',{fileId}); return decryptImagePayload(result.image); }
+  async function loadImageForDisplay(fileId){
+    const key=String(fileId||'');
+
+    if(imageCache.has(key)){
+      return imageCache.get(key);
+    }
+
+    const result=await apiPost('getImage',{fileId:key});
+    const dataUrl=await decryptImagePayload(result.image);
+
+    imageCache.set(key,dataUrl);
+    return dataUrl;
+  }
+
+  function openImageModal(url){
+    if(!url) return;
+
+    const modal=document.getElementById('imageModal');
+    const img=document.getElementById('imageModalImg');
+
+    img.src=url;
+    modal.classList.remove('hidden');
+    document.body.style.overflow='hidden';
+  }
+
+  function closeImageModal(event){
+    if(event){
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const modal=document.getElementById('imageModal');
+    const img=document.getElementById('imageModalImg');
+
+    modal.classList.add('hidden');
+    img.src='';
+    document.body.style.overflow='';
+  }
+
+  async function loadEntryGallery(entry,gallery,forceReload){
+    if(!entry||!gallery) return;
+
+    if(forceReload){
+      (entry.images||[]).forEach(p=>imageCache.delete(String(p.id)));
+      delete gallery.dataset.loaded;
+    }
+
+    if(gallery.dataset.loaded==='1') return;
+
+    gallery.dataset.loaded='1';
+    gallery.innerHTML='<span style="font-size:12px;color:#94a3b8">Загрузка фото...</span>';
+
+    try{
+      const urls=await Promise.all((entry.images||[]).map(p=>loadImageForDisplay(p.id)));
+
+      gallery.innerHTML=urls.map((url,index)=>{
+        const fileId=String(entry.images[index].id);
+
+        return `<button class="card-image" type="button"
+          onclick="event.stopPropagation(); openImageModal(imageCache.get('${fileId}'))"
+          aria-label="Открыть фото">
+          <img src="${url}" alt="Фото">
+        </button>`;
+      }).join('');
+    }catch(error){
+      console.error('Ошибка загрузки фото:',error);
+      gallery.dataset.loaded='';
+
+      gallery.innerHTML=`<div class="image-load-error">
+        <span>Не удалось загрузить фото</span>
+        <button class="image-retry" type="button"
+          onclick="event.stopPropagation(); retryEntryImages('${String(entry.id)}',this)">
+          Повторить
+        </button>
+      </div>`;
+    }
+  }
+
+  function retryEntryImages(entryId,button){
+    const entry=entries.find(x=>String(x.id)===String(entryId));
+    if(!entry) return;
+
+    const body=button.closest('.body');
+    const gallery=body?body.querySelector('[data-entry-images]'):null;
+
+    if(gallery){
+      loadEntryGallery(entry,gallery,true);
+    }
+  }
 
   function readForm() {
     const fullName = document.getElementById('fullName').value.trim();
@@ -1190,7 +1306,14 @@
     document.getElementById('status').value = entry.status || '';
     document.getElementById('pinned').checked = Boolean(entry.pinned);
     pendingPhotos=[]; existingPhotos=(entry.images||[]).map(p=>({id:p.id,previewUrl:''}));
-    Promise.all(existingPhotos.map(async p=>{try{p.previewUrl=await loadImageForDisplay(p.id)}catch(_){}})).then(renderPhotoPreview);
+    Promise.all(existingPhotos.map(async p=>{
+      try{
+        p.previewUrl=await loadImageForDisplay(p.id);
+      }catch(error){
+        console.error('Не удалось загрузить превью фото:',error);
+        p.previewUrl='';
+      }
+    })).then(renderPhotoPreview);
     document.getElementById('editor').innerHTML = sanitizeRichHtml(entry.html || '');
     document.getElementById('editor').classList.add('editing');
 
@@ -1432,6 +1555,20 @@
         </section>
       `;
     }).join('');
+
+    requestAnimationFrame(()=>{
+      entries.forEach(entry=>{
+        if(!expandedCards.has(String(entry.id))) return;
+
+        const domId=safeId(entry.id);
+        const body=document.getElementById('body-'+domId);
+        const gallery=body?body.querySelector('[data-entry-images]'):null;
+
+        if(gallery){
+          loadEntryGallery(entry,gallery,false);
+        }
+      });
+    });
   }
 
   function renderCard(entry) {
@@ -1525,7 +1662,10 @@
       preview.textContent = '▲ Скрыть описание';
       const entry=entries.find(x=>String(x.id)===cleanId);
       const gallery=body.querySelector('[data-entry-images]');
-      if(entry&&gallery&&!gallery.dataset.loaded){ gallery.dataset.loaded='1'; gallery.innerHTML='<span style="font-size:12px;color:#94a3b8">Загрузка фото...</span>'; Promise.all((entry.images||[]).map(async p=>{try{return await loadImageForDisplay(p.id)}catch(_){return null}})).then(urls=>{gallery.innerHTML=urls.filter(Boolean).map(url=>`<div class="card-image" onclick="window.open('${url}','_blank')"><img src="${url}" alt="Фото"></div>`).join('')}) }
+
+      if(entry&&gallery){
+        loadEntryGallery(entry,gallery,false);
+      }
     } else {
       expandedCards.delete(cleanId);
       preview.textContent = preview.dataset.original;
