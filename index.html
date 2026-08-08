@@ -81,6 +81,15 @@
     .nick{display:inline-block;margin-left:5px;padding:3px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;font-size:12px}
     .badges{display:flex;gap:5px;flex-wrap:wrap}
     .badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}
+
+    .status-select{appearance:none;-webkit-appearance:none;border:0;outline:0;border-radius:999px;padding:5px 28px 5px 10px;font-size:11px;font-weight:800;cursor:pointer;background-repeat:no-repeat;background-position:right 9px center;background-size:8px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2364748b' stroke-width='1.5'/%3E%3C/svg%3E")}
+    .status-select.urgent{background-color:#fee2e2;color:#991b1b}
+    .status-select.in_work{background-color:#fef3c7;color:#92400e}
+    .status-select.done{background-color:#dcfce7;color:#166534}
+    .status-select.not_done{background-color:#e2e8f0;color:#334155}
+    .status-select.no_status{background-color:#f1f5f9;color:#64748b}
+    body[data-theme="dark"] .status-select.no_status{background-color:#263244;color:#cbd5e1}
+
     .urgent{background:#fee2e2;color:#991b1b}
     .in_work{background:#fef3c7;color:#92400e}
     .done{background:#dcfce7;color:#166534}
@@ -1369,6 +1378,36 @@
     clearForm(false);
   }
 
+  async function quickChangeStatus(id, selectElement) {
+    const cleanId = String(id);
+    const newStatus = selectElement.value;
+    const entry = entries.find(item => String(item.id) === cleanId);
+    const rawEntry = rawEntries.find(item => String(item.id) === cleanId);
+    const previousStatus = entry ? (entry.status || '') : '';
+
+    if (entry) entry.status = newStatus;
+    if (rawEntry) rawEntry.status = newStatus;
+
+    selectElement.className = 'status-select ' + (newStatus || 'no_status');
+    localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+
+    try {
+      setSyncStatus('⏳ Меняем статус...');
+      await apiPost('updateStatus', { id: cleanId, status: newStatus });
+      setSyncStatus('✅ Статус обновлён');
+    } catch (error) {
+      if (entry) entry.status = previousStatus;
+      if (rawEntry) rawEntry.status = previousStatus;
+
+      selectElement.value = previousStatus;
+      selectElement.className = 'status-select ' + (previousStatus || 'no_status');
+      localStorage.setItem(CACHE_KEY, JSON.stringify(rawEntries));
+
+      alert('❌ Не удалось изменить статус: ' + error.message);
+      setSyncStatus('❌ ' + error.message);
+    }
+  }
+
   async function deleteEntry(id) {
     if (!confirm('Удалить эту запись?')) return;
 
@@ -1599,7 +1638,19 @@
           <div class="badges">
             ${securityBadge}
             ${pinBadge}
-            ${entry.status ? `<span class="badge ${escapeHtml(entry.status)}">${escapeHtml(statusLabels[entry.status] || '')}</span>` : ''}
+            <select
+              class="status-select ${entry.status ? escapeHtml(entry.status) : 'no_status'}"
+              aria-label="Изменить статус"
+              title="Изменить статус"
+              onclick="event.stopPropagation()"
+              onchange="quickChangeStatus('${id}', this)"
+            >
+              <option value="" ${!entry.status ? 'selected' : ''}>Без статуса</option>
+              <option value="urgent" ${entry.status === 'urgent' ? 'selected' : ''}>🔴 Срочно</option>
+              <option value="in_work" ${entry.status === 'in_work' ? 'selected' : ''}>🟡 В работе</option>
+              <option value="done" ${entry.status === 'done' ? 'selected' : ''}>🟢 Выполнено</option>
+              <option value="not_done" ${entry.status === 'not_done' ? 'selected' : ''}>⚪ Не выполнено</option>
+            </select>
           </div>
         </div>
 
