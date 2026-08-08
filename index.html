@@ -325,6 +325,24 @@
     }
 
 
+
+    .record-type-switch{display:flex;gap:6px;padding:4px;background:#f1f5f9;border-radius:11px;margin-bottom:12px;width:max-content;max-width:100%}
+    .record-type-btn{border:0;border-radius:8px;padding:8px 12px;background:transparent;color:#64748b;font-weight:700;font-size:13px}
+    .record-type-btn.active{background:#fff;color:#172033;box-shadow:0 1px 4px rgba(15,23,42,.1)}
+    .attachments{margin-top:12px;border:1px solid #dfe6ef;border-radius:11px;padding:10px;background:#fbfcfe}
+    .attachments-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:700;color:#586579}
+    .photo-picker{display:inline-flex;align-items:center;justify-content:center;border:1px solid #dbe2eb;border-radius:8px;padding:7px 10px;background:#fff;color:#2563eb;cursor:pointer;font-size:12px}
+    .photo-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .photo-item{width:92px;height:92px;border-radius:9px;position:relative;overflow:hidden;border:1px solid #dbe2eb;background:#f1f5f9}
+    .photo-item img,.card-image img{width:100%;height:100%;object-fit:cover;display:block}
+    .photo-remove{position:absolute;top:4px;right:4px;width:24px;height:24px;border:0;border-radius:50%;background:rgba(15,23,42,.78);color:#fff;padding:0}
+    .attachments-hint{margin-top:7px;color:#94a3b8;font-size:11px}
+    .card-images{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .card-image{width:110px;height:110px;border-radius:9px;overflow:hidden;border:1px solid #dbe2eb;background:#eef2f7;cursor:pointer}
+    body[data-theme="dark"] .record-type-switch,body[data-theme="dark"] .attachments{background:#182235;border-color:#334155}
+    body[data-theme="dark"] .record-type-btn{color:#94a3b8}
+    body[data-theme="dark"] .record-type-btn.active,body[data-theme="dark"] .photo-picker{background:#273449;color:#f8fafc;border-color:#374151}
+
     .entry-panel{
       margin-bottom:18px;
       padding:14px;
@@ -476,12 +494,17 @@
         <button class="icon-btn" type="button" onclick="closeEntryPanel()" aria-label="Закрыть форму" title="Закрыть">✕</button>
       </div>
 
+      <div class="record-type-switch">
+        <button id="patientModeBtn" type="button" class="record-type-btn active" onclick="setRecordType('patient')">🐾 По пациенту</button>
+        <button id="freeModeBtn" type="button" class="record-type-btn" onclick="setRecordType('free')">📝 Свободная запись</button>
+      </div>
+
     <div class="grid">
-      <div class="field">
+      <div class="field" id="fullNameField">
         <label>👤 ФИО</label>
         <input id="fullName" placeholder="Иванов Иван" autocomplete="off">
       </div>
-      <div class="field">
+      <div class="field" id="nicknameField">
         <label>🐾 Кличка</label>
         <input id="nickname" placeholder="Fox" autocomplete="off">
       </div>
@@ -492,8 +515,9 @@
       <div class="field">
         <label>🚦 Статус</label>
         <select id="status">
+          <option value="" selected>Без статуса</option>
           <option value="urgent">🔴 Срочно</option>
-          <option value="in_work" selected>🟡 В работе</option>
+          <option value="in_work">🟡 В работе</option>
           <option value="done">🟢 Выполнено</option>
           <option value="not_done">⚪ Не выполнено</option>
         </select>
@@ -513,6 +537,12 @@
     </div>
 
     <div id="editor" contenteditable="true" aria-label="Описание"></div>
+
+    <div class="attachments">
+      <div class="attachments-head"><span>📷 Фотографии</span><label class="photo-picker">＋ Добавить фото<input id="photoInput" type="file" accept="image/*" multiple hidden></label></div>
+      <div id="photoPreview" class="photo-preview"></div>
+      <div class="attachments-hint">Фото уменьшаются и шифруются до отправки.</div>
+    </div>
 
     <label class="pin-row">
       <input id="pinned" type="checkbox">
@@ -565,6 +595,9 @@
   let entries = [];
   let editingId = null;
   let currentFilter = 'all';
+  let recordType = 'patient';
+  let pendingPhotos = [];
+  let existingPhotos = [];
   let autoSyncTimer = null;
   const expandedCards = new Set();
   const expandedDateGroups = new Set();
@@ -885,9 +918,11 @@
 
           decoded.push({
             id: raw.id,
+            recordType: sensitive.recordType === 'free' ? 'free' : 'patient',
             fullName: String(sensitive.fullName || ''),
             nickname: String(sensitive.nickname || ''),
             html: sanitizeRichHtml(sensitive.html || ''),
+            images: Array.isArray(sensitive.images) ? sensitive.images : [],
             date: raw.date,
             status: raw.status,
             pinned: Boolean(raw.pinned),
@@ -899,9 +934,11 @@
         } catch (_) {
           decoded.push({
             id: raw.id,
+            recordType: 'free',
             fullName: 'Не удалось расшифровать',
             nickname: '',
             html: '<p>Возможно, введён другой пароль.</p>',
+            images: [],
             date: raw.date,
             status: raw.status,
             pinned: Boolean(raw.pinned),
@@ -914,9 +951,11 @@
       } else {
         decoded.push({
           id: raw.id,
+          recordType: 'patient',
           fullName: raw.fullName || '',
           nickname: raw.nickname || '',
           html: sanitizeRichHtml(raw.html || ''),
+          images: [],
           date: raw.date,
           status: raw.status,
           pinned: Boolean(raw.pinned),
@@ -1018,6 +1057,56 @@
     document.getElementById('entryPanel').classList.add('hidden');
   }
 
+  function setRecordType(type) {
+    recordType = type === 'free' ? 'free' : 'patient';
+    document.getElementById('patientModeBtn').classList.toggle('active', recordType === 'patient');
+    document.getElementById('freeModeBtn').classList.toggle('active', recordType === 'free');
+    document.getElementById('fullNameField').classList.toggle('hidden', recordType === 'free');
+    document.getElementById('nicknameField').classList.toggle('hidden', recordType === 'free');
+    if (recordType === 'free') { document.getElementById('fullName').value=''; document.getElementById('nickname').value=''; }
+  }
+
+  async function fileToOptimizedDataUrl(file) {
+    const bitmap = await createImageBitmap(file);
+    const maxSide = 1600;
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+    bitmap.close();
+    return canvas.toDataURL('image/jpeg',0.82);
+  }
+
+  function renderPhotoPreview(){
+    const box=document.getElementById('photoPreview');
+    const all=[...existingPhotos.map((p,i)=>({kind:'existing',p,i})),...pendingPhotos.map((p,i)=>({kind:'pending',p,i}))];
+    box.innerHTML=all.map(x=>`<div class="photo-item"><img src="${x.p.previewUrl||x.p.dataUrl||''}" alt="Фото"><button class="photo-remove" type="button" onclick="removePhoto('${x.kind}',${x.i})">✕</button></div>`).join('');
+  }
+  function removePhoto(kind,index){ if(kind==='existing') existingPhotos.splice(index,1); else pendingPhotos.splice(index,1); renderPhotoPreview(); }
+
+  async function encryptImageDataUrl(dataUrl){
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const bytes=new TextEncoder().encode(dataUrl);
+    const ciphertext=await crypto.subtle.encrypt({name:'AES-GCM',iv},cryptoKey,bytes);
+    return {iv:bytesToBase64(iv),data:bytesToBase64(new Uint8Array(ciphertext))};
+  }
+  async function decryptImagePayload(payload){
+    const plaintext=await crypto.subtle.decrypt({name:'AES-GCM',iv:base64ToBytes(payload.iv)},cryptoKey,base64ToBytes(payload.data));
+    return new TextDecoder().decode(plaintext);
+  }
+  async function uploadPendingPhotos(){
+    const uploaded=[];
+    for(let i=0;i<pendingPhotos.length;i++){
+      setSyncStatus(`⏳ Загружаем фото ${i+1}/${pendingPhotos.length}...`);
+      const encrypted=await encryptImageDataUrl(pendingPhotos[i].dataUrl);
+      const result=await apiPost('uploadImage',{image:encrypted,name:pendingPhotos[i].name||`photo_${Date.now()}.jpg`});
+      uploaded.push({id:result.fileId});
+    }
+    return uploaded;
+  }
+  async function loadImageForDisplay(fileId){ const result=await apiPost('getImage',{fileId}); return decryptImagePayload(result.image); }
+
   function readForm() {
     const fullName = document.getElementById('fullName').value.trim();
     const nickname = document.getElementById('nickname').value.trim();
@@ -1026,18 +1115,22 @@
     const pinned = document.getElementById('pinned').checked;
     const html = sanitizeRichHtml(document.getElementById('editor').innerHTML.trim());
 
-    if (!fullName) throw new Error('Введите ФИО');
+    if (recordType === 'patient' && !fullName) throw new Error('Введите ФИО или выберите «Свободная запись»');
     if (!date) throw new Error('Укажите дату');
     if (!htmlToText(html)) throw new Error('Добавьте описание');
 
-    return { fullName, nickname, date, status, pinned, html };
+    return { recordType, fullName, nickname, date, status, pinned, html };
   }
 
   async function prepareEncryptedEntry(form, id) {
+    const uploadedPhotos = await uploadPendingPhotos();
+    const images = [...existingPhotos.map(p=>({id:p.id})), ...uploadedPhotos];
     const encrypted = await encryptSensitiveData({
+      recordType: form.recordType || 'patient',
       fullName: form.fullName,
       nickname: form.nickname,
-      html: form.html
+      html: form.html,
+      images
     });
 
     return {
@@ -1090,11 +1183,14 @@
     document.getElementById('entryPanel').classList.remove('hidden');
     document.getElementById('entryPanelTitle').textContent = 'Редактирование записи';
 
+    setRecordType(entry.recordType || 'patient');
     document.getElementById('fullName').value = entry.fullName || '';
     document.getElementById('nickname').value = entry.nickname || '';
     document.getElementById('entryDate').value = entry.date || today();
-    document.getElementById('status').value = entry.status || 'in_work';
+    document.getElementById('status').value = entry.status || '';
     document.getElementById('pinned').checked = Boolean(entry.pinned);
+    pendingPhotos=[]; existingPhotos=(entry.images||[]).map(p=>({id:p.id,previewUrl:''}));
+    Promise.all(existingPhotos.map(async p=>{try{p.previewUrl=await loadImageForDisplay(p.id)}catch(_){}})).then(renderPhotoPreview);
     document.getElementById('editor').innerHTML = sanitizeRichHtml(entry.html || '');
     document.getElementById('editor').classList.add('editing');
 
@@ -1253,9 +1349,10 @@
     document.getElementById('fullName').value = '';
     document.getElementById('nickname').value = '';
     document.getElementById('entryDate').value = today();
-    document.getElementById('status').value = 'in_work';
+    document.getElementById('status').value = '';
     document.getElementById('pinned').checked = false;
     document.getElementById('editor').innerHTML = '';
+    pendingPhotos=[]; existingPhotos=[]; renderPhotoPreview(); setRecordType('patient');
 
     if (resetEdit && editingId) {
       cancelEdit();
@@ -1360,15 +1457,12 @@
       <article class="card${pinClass}${legacyClass}" onclick="event.stopPropagation()">
         <div class="card-top">
           <div>
-            <span class="person">${escapeHtml(entry.fullName)}</span>
-            ${entry.nickname ? `<span class="nick">${escapeHtml(entry.nickname)}</span>` : ''}
+            ${entry.recordType === 'free' ? '<span class="person">📝 Общая запись</span>' : `<span class="person">${escapeHtml(entry.fullName)}</span>${entry.nickname ? ` <span class="nick">${escapeHtml(entry.nickname)}</span>` : ''}`}
           </div>
           <div class="badges">
             ${securityBadge}
             ${pinBadge}
-            <span class="badge ${escapeHtml(entry.status)}">
-              ${escapeHtml(statusLabels[entry.status] || statusLabels.in_work)}
-            </span>
+            ${entry.status ? `<span class="badge ${escapeHtml(entry.status)}">${escapeHtml(statusLabels[entry.status] || '')}</span>` : ''}
           </div>
         </div>
 
@@ -1377,7 +1471,7 @@
           ${escapeHtml(previewLabel)}
         </div>
 
-        <div id="body-${domId}" class="body${isExpanded ? ' show' : ''}">${sanitizeRichHtml(entry.html || '')}</div>
+        <div id="body-${domId}" class="body${isExpanded ? ' show' : ''}">${sanitizeRichHtml(entry.html || '')}${(entry.images&&entry.images.length)?`<div class="card-images" data-entry-images="${domId}"></div>`:''}</div>
 
         <div class="card-actions">
           <button class="edit" onclick="beginEdit('${id}')">✏️ Редактировать</button>
@@ -1429,6 +1523,9 @@
     if (willOpen) {
       expandedCards.add(cleanId);
       preview.textContent = '▲ Скрыть описание';
+      const entry=entries.find(x=>String(x.id)===cleanId);
+      const gallery=body.querySelector('[data-entry-images]');
+      if(entry&&gallery&&!gallery.dataset.loaded){ gallery.dataset.loaded='1'; gallery.innerHTML='<span style="font-size:12px;color:#94a3b8">Загрузка фото...</span>'; Promise.all((entry.images||[]).map(async p=>{try{return await loadImageForDisplay(p.id)}catch(_){return null}})).then(urls=>{gallery.innerHTML=urls.filter(Boolean).map(url=>`<div class="card-image" onclick="window.open('${url}','_blank')"><img src="${url}" alt="Фото"></div>`).join('')}) }
     } else {
       expandedCards.delete(cleanId);
       preview.textContent = preview.dataset.original;
@@ -1447,7 +1544,7 @@
     text += '='.repeat(60) + '\n\n';
 
     data.forEach(entry => {
-      text += `${formatDate(entry.date)} | ${entry.fullName}`;
+      text += `${formatDate(entry.date)} | ${entry.recordType === 'free' ? 'Общая запись' : entry.fullName}`;
 
       if (entry.nickname) {
         text += ` (${entry.nickname})`;
@@ -1757,6 +1854,14 @@
     if (saved === 'system') {
       applyTheme('system');
     }
+  });
+
+  document.getElementById('photoInput').addEventListener('change', async event => {
+    const files=Array.from(event.target.files||[]); event.target.value='';
+    try{
+      for(const file of files){ if(!file.type.startsWith('image/')) continue; setSyncStatus('⏳ Подготавливаем фото...'); pendingPhotos.push({name:file.name,dataUrl:await fileToOptimizedDataUrl(file)}); }
+      renderPhotoPreview(); setSyncStatus('');
+    }catch(error){ alert('❌ Не удалось обработать фото: '+error.message); }
   });
 
   function init() {
